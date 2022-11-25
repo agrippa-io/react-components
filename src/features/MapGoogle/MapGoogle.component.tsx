@@ -1,0 +1,44 @@
+import React from 'react'
+
+import { Box } from '@mui/material'
+import GoogleMapReact from 'google-map-react'
+import { IMapGoogleProps } from './@types'
+import { MapGoogleConfigTable } from './components/MapGoogleConfigTable'
+
+// @ts-ignore
+const AnyReactComponent = ({ lat, lng, text }) => <div>{text}</div>;
+const defaultProps = {
+  center: {
+    lat: 10.99835602,
+    lng: 77.01502627
+  },
+  zoom: 11
+};
+
+export function MapGoogle({
+  config,
+  debug = false,
+}: IMapGoogleProps) {
+
+
+  return (
+    <>
+      <Box height={600} width='100%'>
+        <GoogleMapReact
+          bootstrapURLKeys={{ key: config.apiKey }}
+          defaultCenter={defaultProps.center}
+          defaultZoom={defaultProps.zoom}
+        >
+          <AnyReactComponent
+            lat={59.955413}
+            lng={30.337844}
+            text="My Marker"
+          />
+        </GoogleMapReact>
+      </Box>
+      <MapGoogleConfigTable config={config} debug={debug} />
+    </>
+  )
+}
+
+
