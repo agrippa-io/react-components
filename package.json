@@ -7,6 +7,8 @@
     "@emotion/styled": "^11.10.5",
     "@fontsource/material-icons": "^4.5.4",
     "@fontsource/roboto": "^4.5.8",
+    "@googlemaps/google-maps-services-js": "^3.3.16",
+    "@googlemaps/js-api-loader": "^1.15.1",
     "@mui/material": "^5.10.13",
     "@mui/styles": "^5.10.10",
     "@mui/x-data-grid": "^5.17.11",
@@ -33,6 +35,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "storybook": "start-storybook -p 6006 -s public",
+    "storybook:upgrade": "npx storybook upgrade && npx storybook@next automigrate",
     "build-storybook": "build-storybook -s public"
   },
   "eslintConfig": {
@@ -65,7 +68,8 @@
     ]
   },
   "devDependencies": {
-    "@agrippa-io/storybook-mui-5": "0.0.0-alpha.2",
+    "@agrippa-io/storybook-mui-5": "0.0.0-alpha.3",
+    "@babel/core": "^7.20.2",
     "@storybook/addon-actions": "^6.5.13",
     "@storybook/addon-essentials": "^6.5.13",
     "@storybook/addon-interactions": "^6.5.13",
@@ -76,8 +80,11 @@
     "@storybook/preset-create-react-app": "^4.1.2",
     "@storybook/react": "^6.5.13",
     "@storybook/testing-library": "^0.0.13",
+    "@types/axios": "^0.14.0",
+    "@types/google.maps": "^3.50.5",
+    "@types/googlemaps": "^3.43.3",
     "babel-plugin-named-exports-order": "^0.0.2",
     "prop-types": "^15.8.1",
-    "webpack": "^5.75.0"
+    "webpack": "5"
   }
 }
