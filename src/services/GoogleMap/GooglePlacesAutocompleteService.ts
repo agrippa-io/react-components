@@ -1,9 +1,9 @@
-import {GoogleMapService, IGoogleMapServiceProps} from './GoogleMapService'
+import { GoogleMapService, IGoogleMapServiceProps } from './GoogleMapService'
 
 
-export class GooglePlacesService extends GoogleMapService {
+export class GooglePlacesAutocompleteService extends GoogleMapService {
   // @ts-ignore
-  apiAutocomplete: google.maps.places.AutocompleteService
+  api: google.maps.places.AutocompleteService
 
   constructor({ loaderOptions }: IGoogleMapServiceProps) {
     super({
@@ -15,13 +15,13 @@ export class GooglePlacesService extends GoogleMapService {
   }
 
   async init() {
-    if (!this.apiAutocomplete) {
+    if (!this.api) {
       await super.init()
-      this.apiAutocomplete = new this.google.maps.places.AutocompleteService()
+      this.api = new this.google.maps.places.AutocompleteService()
     }
   }
 
   async getPlacePredictions(request: google.maps.places.AutocompletionRequest): Promise<google.maps.places.AutocompleteResponse> {
-    return this.apiAutocomplete.getPlacePredictions(request)
+    return this.api.getPlacePredictions(request)
   }
 }

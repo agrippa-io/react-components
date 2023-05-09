@@ -1,6 +1,6 @@
 import React, { SyntheticEvent, useState, useEffect } from 'react'
 
-import { GooglePlacesService } from '../../services/GoogleMap'
+import { GooglePlacesAutocompleteService } from '../../services/GoogleMap'
 
 import { AutocompleteAPI } from '../AutocompleteAPI'
 import { AutocompleteRenderInputParams, Box, TextField } from "@mui/material";
@@ -25,7 +25,7 @@ export function GooglePlacesAutocomplete<
   DisableClearable extends boolean | undefined = undefined,
   FreeSolo extends boolean | undefined = undefined,
   >(props: IGooglePlacesAutocompleteProps<T, Multiple, DisableClearable, FreeSolo>) {
-  const [autocompleteService, setAutocompleteService] = useState<GooglePlacesService>()
+  const [autocompleteService, setAutocompleteService] = useState<GooglePlacesAutocompleteService>()
   const [autocompleteOptions, setAutocompleteOptions] = useState<any[]>([])
 
   useEffect(() => {
@@ -34,7 +34,7 @@ export function GooglePlacesAutocomplete<
 
   const initService = async () => {
     try {
-      const service = new GooglePlacesService({
+      const service = new GooglePlacesAutocompleteService({
         loaderOptions: {
           apiKey: props.apiKey
         },
