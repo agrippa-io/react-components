@@ -1,4 +1,4 @@
-import { maxChar } from '../utils'
+import { meetsMaxChar } from '../utils'
 
 export interface IValidateMaxCharProps {
   max: number
@@ -10,7 +10,7 @@ export function validateMaxChar({
   message,
 }: IValidateMaxCharProps) {
   return (value: any) => {
-    if (value === '' || maxChar(value, max)) {
+    if (value === '' || meetsMaxChar(value, max)) {
       return true
     }
 

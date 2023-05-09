@@ -1,4 +1,4 @@
-export * from './maxChar'
-export * from './minChar'
-export * from './rangeChar'
+export * from './meetsMaxChar'
+export * from './meetsMinChar'
+export * from './isWithinRangeChar'
 

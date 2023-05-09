@@ -1,5 +1,4 @@
-import { minChar, maxChar } from '../utils'
-import isEmpty from "lodash";
+import { meetsMinChar, meetsMaxChar } from '../utils'
 
 export interface IValidateRangeCharProps {
   min?: number
@@ -13,7 +12,7 @@ export function validateRangeChar({
   message,
 }: IValidateRangeCharProps) {
   return (value: any) => {
-    if (minChar(value, min) && maxChar(value, max) || value === '') {
+    if (meetsMinChar(value, min) && meetsMaxChar(value, max) || value === '') {
       return true
     }
 

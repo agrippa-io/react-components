@@ -1,4 +1,4 @@
-import { minChar } from '../utils'
+import { meetsMinChar } from '../utils'
 
 export interface IValidateMinCharProps {
   min: number
@@ -10,7 +10,7 @@ export function validateMinChar({
   message,
 }: IValidateMinCharProps) {
   return (value: any) => {
-    if (value === '' || minChar(value, min)) {
+    if (value === '' || meetsMinChar(value, min)) {
       return true
     }
 
