@@ -1,3 +1,3 @@
-export interface IPlacePrediction extends google.maps.places.AutocompletePrediction {
+export interface IPlacePrediction extends Omit<google.maps.places.AutocompletePrediction, 'reference'> {
   reference?: string
 }
