@@ -4,7 +4,15 @@ import { FieldText } from '../FieldText'
 import { FormProvider, useForm } from "react-hook-form";
 import { Box, Button, TextField } from "@mui/material";
 import { ReactHookFormStatePane } from "../../../../organisms/ReactHookFormStatePane";
-import { validateMinChar, validateMaxChar, validateRangeChar} from "../../../../../services";
+import {
+  validateIPv4String,
+  validateIPv4RangeString,
+  validateIPv4CidrNotation,
+  validateIPv4CidrRange,
+  validateIPv4Mask,
+  validateIPv4Number,
+  validateIPv4Octet,
+} from "../../../../../services";
 import {argTypesTextField} from "../../../../../constants";
 
 const sxContainerRoot = {
@@ -21,12 +29,14 @@ const sxContainerPane = {
 }
 
 export default {
-  title: 'Components / atoms / Field / FieldText / String',
+  title: 'Components / atoms / Field / FieldText / IP',
+  name: 'IPv4',
   component: FieldText,
   argTypes: argTypesTextField,
 } as ComponentMeta<typeof FieldText>
 
-export const FieldTextStringComponent: ComponentStory<typeof TextField> = (args) => {
+// TODO - Replace placeholders with valid examples
+export const FieldTextIPv4Components: ComponentStory<typeof TextField> = (args) => {
   const formProviderProps = useForm({
     mode: "onChange"
   })
@@ -39,79 +49,112 @@ export const FieldTextStringComponent: ComponentStory<typeof TextField> = (args)
             <form onSubmit={formProviderProps.handleSubmit(onSubmit)}>
 
               <FieldText
-                name="fieldChar"
+                name="ipv4String"
+                rules={{
+                  validate: validateIPv4String,
+                }}
                 textFieldProps={{
-                  label: 'String',
-                  helperText: 'Enter a string',
+                  label: 'IPv4 String',
+                  helperText: 'Enter an IPv4 String',
                   ...args,
                   inputProps: {
-                    placeholder: 'Enter a string',
+                    placeholder: 'ex: 127.0.0.1',
                     ...args.inputProps,
                   },
                 }}
               />
 
               <FieldText
-                name="fieldMinChar"
+                name="ipv4Range"
                 rules={{
-                  validate: validateMinChar({ min: 5 })
+                  validate: validateIPv4RangeString,
                 }}
                 textFieldProps={{
-                  label: 'Min Characters',
-                  helperText: 'Enter a string with 5 or more characters',
+                  label: 'IPv4 Range',
+                  helperText: 'Enter an IPv4 Range',
                   ...args,
                   inputProps: {
-                    placeholder: 'Enter a string with 5 or more characters',
+                    placeholder: 'ex: 1.0.0.0-1.2.3.4',
                     ...args.inputProps,
                   },
                 }}
               />
 
               <FieldText
-                name="fieldMax"
+                name="ipv4CidrNotation"
                 rules={{
-                  validate: validateMaxChar({ max: 10 })
+                  validate: validateIPv4CidrNotation,
                 }}
                 textFieldProps={{
-                  label: 'Max Characters',
-                  helperText: 'Enter a string with 10 or fewer characters',
+                  label: 'IPv4 Cidr Notation',
+                  helperText: 'Enter an IPv4 Cidr Notation',
                   ...args,
                   inputProps: {
-                    placeholder: 'Enter a string with 10 or fewer characters',
+                    placeholder: 'ex: 127.0.0.1/10',
                     ...args.inputProps,
                   },
                 }}
               />
 
               <FieldText
-                name="fieldRangeChar"
+                name="ipv4CidrRange"
                 rules={{
-                  validate: validateRangeChar({ min: 5, max: 10 })
+                  validate: validateIPv4CidrRange,
                 }}
                 textFieldProps={{
-                  label: 'Character Range',
-                  helperText: 'Enter a string between 5 and 10 characters',
+                  label: 'IPv4 Cidr Range',
+                  helperText: 'Enter an IPv4 Cidr Range',
                   ...args,
                   inputProps: {
-                    placeholder: 'Enter a string between 5 and 10 characters',
+                    placeholder: 'ex: 127.0.0.0/10',
                     ...args.inputProps,
                   },
                 }}
               />
 
               <FieldText
-                name="fieldTextarea"
+                name="ipv4Mask"
                 rules={{
-                  validate: validateRangeChar({ min: 5, max: 250 })
+                  validate: validateIPv4Mask,
                 }}
                 textFieldProps={{
-                  label: 'Textarea for large bodies of text',
-                  helperText: 'Insert large text block',
-                  multiline: true,
-                  rows: 5,
+                  label: 'IPv4 Mask',
+                  helperText: 'Enter an IPv4 Mask',
                   ...args,
                   inputProps: {
-                    placeholder: 'Insert large text block',
+                    placeholder: 'ex: 255.255.255.0',
+                    ...args.inputProps,
+                  },
+                }}
+              />
+
+              <FieldText
+                name="ipv4Number"
+                rules={{
+                  validate: validateIPv4Number,
+                }}
+                textFieldProps={{
+                  label: 'IPv4 Number',
+                  helperText: 'Enter an IPv4 Number',
+                  ...args,
+                  inputProps: {
+                    placeholder: '127.0.0.1',
+                    ...args.inputProps,
+                  },
+                }}
+              />
+
+              <FieldText
+                name="ipv4Octet"
+                rules={{
+                  validate: validateIPv4Octet,
+                }}
+                textFieldProps={{
+                  label: 'IPv4 Octet',
+                  helperText: 'Enter an IPv4 Octet',
+                  ...args,
+                  inputProps: {
+                    placeholder: '255',
                     ...args.inputProps,
                   },
                 }}
@@ -134,3 +177,5 @@ export const FieldTextStringComponent: ComponentStory<typeof TextField> = (args)
     </FormProvider>
   )
 }
+
+FieldTextIPv4Components.storyName = 'IPv4'

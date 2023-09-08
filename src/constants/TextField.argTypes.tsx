@@ -45,8 +45,7 @@ export const argTypesTextField = {
     },
   },
   color: {
-    type:
-      "'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' | string",
+    type: "string",
     description:
       'The color of the component. It supports both default and custom theme colors, which can be added as shown in the palette customization guide.',
     defaultValue: 'primary',
@@ -292,7 +291,7 @@ export const argTypesTextField = {
   size: {
     description: 'The size of the component.',
     type: "'medium' | 'small' | string",
-    options: ['medium', 'small'],
+    options: ['small', 'medium'],
     table: {
       category: TABLE_CATEGORY.MATERIAL_UI,
     },

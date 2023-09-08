@@ -22,9 +22,9 @@ const sxContainerPane = {
 
 export default {
   title: 'Components / atoms / Field / FieldText / Number',
-  component: TextField,
+  component: FieldText,
   argTypes: argTypesTextField,
-} as ComponentMeta<typeof TextField>
+} as ComponentMeta<typeof FieldText>
 
 export const FieldTextNumberComponent: ComponentStory<typeof TextField> = (args) => {
   const formProviderProps = useForm({
@@ -49,7 +49,7 @@ export const FieldTextNumberComponent: ComponentStory<typeof TextField> = (args)
                   ...args,
                   inputProps: {
                     placeholder: 'Enter a number',
-                    ...args.inputProps,
+                    ...(args?.inputProps ?? {}),
                   },
                 }}
               />
@@ -65,7 +65,7 @@ export const FieldTextNumberComponent: ComponentStory<typeof TextField> = (args)
                   ...args,
                   inputProps: {
                     placeholder: 'Enter a integer',
-                    ...args.inputProps,
+                    ...(args?.inputProps ?? {}),
                   },
                 }}
               />
@@ -81,7 +81,7 @@ export const FieldTextNumberComponent: ComponentStory<typeof TextField> = (args)
                   ...args,
                   inputProps: {
                     placeholder: 'Enter a float',
-                    ...args.inputProps,
+                    ...(args?.inputProps ?? {}),
                   },
                 }}
               />
