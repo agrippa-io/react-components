@@ -3,6 +3,7 @@ frontend:
   phases:
     preBuild:
       commands:
+        - echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc
         - yarn install
     build:
       commands:
