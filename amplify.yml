@@ -9,7 +9,7 @@ frontend:
       commands:
         - yarn run build
   artifacts:
-    baseDirectory: storybook-static
+    baseDirectory: storybook-static/
     files:
       - '**/*'
   cache:
