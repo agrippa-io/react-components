@@ -1,0 +1,12 @@
+name: login-aws-ecr
+run-name: Configure AWS credentials
+on: [push]
+jobs:
+  aws-ecr-login:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::739504454286:role/ecsTaskExecutionRole
+          aws-region: us-west-1
