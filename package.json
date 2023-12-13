@@ -39,6 +39,7 @@
     "format": "prettier --write --parser typescript '**/*.{ts,tsx}'",
     "eject:app": "react-scripts eject",
     "lint": "eslint . --ext .ts,.tsx --ignore-path .gitignore --fix",
+    "prepare": "husky install",
     "start": "yarn start:storybook",
     "start:app": "react-scripts start",
     "start:storybook": "start-storybook -p 6006 -s public",
