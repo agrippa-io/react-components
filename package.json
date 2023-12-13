@@ -1,6 +1,13 @@
 {
   "name": "@agrippa-io/react-components",
   "version": "0.0.0",
+  "type": "module",
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.es.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "/dist"
+  ],
   "dependencies": {
     "@emotion/react": "^11.10.5",
     "@emotion/styled": "^11.10.5",
@@ -13,14 +20,7 @@
     "@mui/x-data-grid": "^5.17.11",
     "@reduxjs/toolkit": "^1.8.1",
     "@storybook/preview-api": "^7.0.10",
-    "@testing-library/jest-dom": "^5.16.4",
-    "@testing-library/react": "^13.0.1",
-    "@testing-library/user-event": "^14.1.1",
-    "@types/google-map-react": "^2.1.7",
-    "@types/jest": "^27.4.1",
-    "@types/node": "^17.0.25",
-    "@types/react": "^18.0.6",
-    "@types/react-dom": "^18.0.2",
+    "eslint": "^8.55.0",
     "google-map-react": "^2.2.0",
     "ip-num": "^1.5.1",
     "react": "^18.2.0",
@@ -33,14 +33,19 @@
     "web-vitals": "^2.1.0"
   },
   "scripts": {
-    "start": "yarn start:storybook",
-    "build": "yarn build:storybook",
-    "start:app": "react-scripts start",
+    "build": "./node_modules/.bin/tsc -p ./tsconfig.prod.json && ./node_modules/.bin/vite build",
     "build:app": "react-scripts build",
-    "test:app": "react-scripts test",
-    "eject:app": "react-scripts eject",
-    "start:storybook": "start-storybook -p 6006 -s public",
     "build:storybook": "build-storybook -s public",
+    "format": "prettier --write --parser typescript '**/*.{ts,tsx}'",
+    "eject:app": "react-scripts eject",
+    "lint": "eslint . --ext .ts,.tsx --ignore-path .gitignore --fix",
+    "start": "yarn start:storybook",
+    "start:app": "react-scripts start",
+    "start:storybook": "start-storybook -p 6006 -s public",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:app": "react-scripts test",
     "upgrade:storybook": "npx storybook upgrade && npx storybook@next automigrate"
   },
   "eslintConfig": {
@@ -58,6 +63,13 @@
           "import/no-anonymous-default-export": "off"
         }
       }
+    ]
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "npm run format",
+      "npm run lint",
+      "npm run test"
     ]
   },
   "browserslist": {
@@ -92,11 +104,32 @@
     "@storybook/preset-create-react-app": "^4.1.2",
     "@storybook/react": "^6.5.16",
     "@storybook/testing-library": "^0.0.13",
+    "@testing-library/jest-dom": "^5.16.4",
+    "@testing-library/react": "^13.0.1",
+    "@testing-library/user-event": "^14.1.1",
     "@types/axios": "^0.14.0",
+    "@types/google-map-react": "^2.1.7",
     "@types/google.maps": "^3.50.5",
     "@types/googlemaps": "^3.43.3",
+    "@types/jest": "^27.4.1",
+    "@types/node": "^17.0.25",
+    "@types/react": "^18.0.6",
+    "@types/react-dom": "^18.0.2",
+    "@typescript-eslint/eslint-plugin": "^6.14.0",
+    "@typescript-eslint/parser": "^6.14.0",
     "babel-plugin-named-exports-order": "^0.0.2",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.0.1",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-storybook": "^0.6.15",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.0",
+    "prettier": "^3.1.1",
     "prop-types": "^15.8.1",
+    "vite": "^5.0.8",
+    "vite-plugin-dts": "^3.6.4",
+    "vitest": "^1.0.4",
     "webpack": "5"
   }
 }

@@ -20,7 +20,7 @@ export function predictionToPlace(
   const countryPredictionDescriptionOrder: string[] = descriptionKeyOrder[countryKey]
 
   if (isEmpty(countryPredictionDescriptionOrder)) {
-    throw new Error(`Unhandled Country['${countryKey}'] in descriptionKeyOrder`, descriptionKeyOrder)
+    throw new Error(`Unhandled Country['${countryKey}'] in descriptionKeyOrder['${descriptionKeyOrder}']`)
   }
 
   return placeNodes.reduce((placeObject, node, index) => {

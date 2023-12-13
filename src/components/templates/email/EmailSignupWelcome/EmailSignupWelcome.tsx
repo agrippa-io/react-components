@@ -1,4 +1,5 @@
 import React from "react";
+// @ts-ignore
 import { A, Box, Email, Item, Image, Span } from "react-html-email";
 // import { EmailFooter } from "./EmailFooter";
 
