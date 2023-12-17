@@ -1,17 +1,15 @@
-import { isFloat } from '../utils'
+import { isFloat } from "../utils";
 
 export interface IValidateFloatProps {
-  message?: string
+  message?: string;
 }
 
-export function validateFloat({
-  message = 'Must be an float'
-}: IValidateFloatProps) {
+export function validateFloat({ message = "Must be an float" }: IValidateFloatProps) {
   return (value: any) => {
-    if (isFloat(value) || value === '') {
-      return true
+    if (isFloat(value) || value === "") {
+      return true;
     }
 
-    return message
-  }
+    return message;
+  };
 }

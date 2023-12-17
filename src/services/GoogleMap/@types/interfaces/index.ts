@@ -1,2 +1,2 @@
-export * from './IPlace'
-export * from './IPlacePrediction'
+export * from "./IPlace";
+export * from "./IPlacePrediction";

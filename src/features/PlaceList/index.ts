@@ -1,3 +1,3 @@
-export * from './components'
-export * from './@types'
-export * from './PlaceList.component'
+export * from "./components";
+export * from "./@types";
+export * from "./PlaceList.component";

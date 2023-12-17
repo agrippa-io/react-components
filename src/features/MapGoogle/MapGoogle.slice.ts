@@ -1,1 +1,1 @@
-export const MapGoogleSlice = {}
+export const MapGoogleSlice = {};

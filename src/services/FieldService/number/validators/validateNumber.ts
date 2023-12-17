@@ -1,17 +1,15 @@
-import { isNumber } from '../utils'
+import { isNumber } from "../utils";
 
 export interface IValidateNumberProps {
-  message?: string
+  message?: string;
 }
 
-export function validateNumber({
-  message = 'Must be an number'
-}: IValidateNumberProps) {
+export function validateNumber({ message = "Must be an number" }: IValidateNumberProps) {
   return (value: any) => {
-    if (isNumber(value) || value === '') {
-      return true
+    if (isNumber(value) || value === "") {
+      return true;
     }
 
-    return message
-  }
+    return message;
+  };
 }

@@ -1,4 +1,4 @@
-import { MapGoogleConfig } from '../config/MapGoogle.config'
+import { MapGoogleConfig } from "../config/MapGoogle.config";
 
 export const MapGoogleArgTypes = {
   config: {
@@ -6,5 +6,5 @@ export const MapGoogleArgTypes = {
   },
   debug: {
     defaultValue: true,
-  }
-}
+  },
+};

@@ -1,6 +1,6 @@
-import { ComponentStory, ComponentMeta } from '@storybook/react'
+import { ComponentStory, ComponentMeta } from "@storybook/react";
 
-import { FieldText } from '../FieldText'
+import { FieldText } from "../FieldText";
 import { FormProvider, useForm } from "react-hook-form";
 import { Box, Button, TextField } from "@mui/material";
 import { ReactHookFormStatePane } from "../../../../organisms/ReactHookFormStatePane";
@@ -13,52 +13,51 @@ import {
   validateIPv6Number,
   validateIPv6Hexadecatet,
 } from "../../../../../services";
-import {argTypesTextField} from "../../../../../constants";
+import { argTypesTextField } from "../../../../../constants";
 
 const sxContainerRoot = {
-  display: 'flex',
-  direction: 'row',
-  flexBasis: '100%',
-}
+  display: "flex",
+  direction: "row",
+  flexBasis: "100%",
+};
 
 const sxContainerPane = {
-  display: 'flex',
-  direction: 'column',
-  flexBasis: '50%',
-  margin: '0 5px'
-}
+  display: "flex",
+  direction: "column",
+  flexBasis: "50%",
+  margin: "0 5px",
+};
 
 export default {
-  title: 'Components / atoms / Field / FieldText / IP',
-  name: 'IPv6',
+  title: "Components / atoms / Field / FieldText / IP",
+  name: "IPv6",
   component: FieldText,
   argTypes: argTypesTextField,
-} as ComponentMeta<typeof FieldText>
+} as ComponentMeta<typeof FieldText>;
 
 // TODO - Replace placeholders with valid examples
 export const FieldTextIPv6Components: ComponentStory<typeof TextField> = (args) => {
   const formProviderProps = useForm({
-    mode: "onChange"
-  })
-  const onSubmit = (data: any) => console.log('Form Data', data)
+    mode: "onChange",
+  });
+  const onSubmit = (data: any) => console.log("Form Data", data);
 
   return (
     <FormProvider {...formProviderProps}>
       <Box sx={sxContainerRoot}>
         <Box sx={sxContainerPane}>
           <form onSubmit={formProviderProps.handleSubmit(onSubmit)}>
-
             <FieldText
               name="ipv6String"
               rules={{
                 validate: validateIPv6String,
               }}
               textFieldProps={{
-                label: 'IPv6 String',
-                helperText: 'Enter an IPv6 String',
+                label: "IPv6 String",
+                helperText: "Enter an IPv6 String",
                 ...args,
                 inputProps: {
-                  placeholder: 'ex: 127.0.0.1',
+                  placeholder: "ex: 127.0.0.1",
                   ...args.inputProps,
                 },
               }}
@@ -70,11 +69,11 @@ export const FieldTextIPv6Components: ComponentStory<typeof TextField> = (args) 
                 validate: validateIPv6RangeString,
               }}
               textFieldProps={{
-                label: 'IPv6 Range',
-                helperText: 'Enter an IPv6 Range',
+                label: "IPv6 Range",
+                helperText: "Enter an IPv6 Range",
                 ...args,
                 inputProps: {
-                  placeholder: 'ex: 1.0.0.0-1.2.3.4',
+                  placeholder: "ex: 1.0.0.0-1.2.3.4",
                   ...args.inputProps,
                 },
               }}
@@ -86,11 +85,11 @@ export const FieldTextIPv6Components: ComponentStory<typeof TextField> = (args) 
                 validate: validateIPv6CidrNotation,
               }}
               textFieldProps={{
-                label: 'IPv6 Cidr Notation',
-                helperText: 'Enter an IPv6 Cidr Notation',
+                label: "IPv6 Cidr Notation",
+                helperText: "Enter an IPv6 Cidr Notation",
                 ...args,
                 inputProps: {
-                  placeholder: 'ex: 127.0.0.1/10',
+                  placeholder: "ex: 127.0.0.1/10",
                   ...args.inputProps,
                 },
               }}
@@ -102,11 +101,11 @@ export const FieldTextIPv6Components: ComponentStory<typeof TextField> = (args) 
                 validate: validateIPv6CidrRange,
               }}
               textFieldProps={{
-                label: 'IPv6 Cidr Range',
-                helperText: 'Enter an IPv6 Cidr Range',
+                label: "IPv6 Cidr Range",
+                helperText: "Enter an IPv6 Cidr Range",
                 ...args,
                 inputProps: {
-                  placeholder: 'ex: 127.0.0.0/10',
+                  placeholder: "ex: 127.0.0.0/10",
                   ...args.inputProps,
                 },
               }}
@@ -118,11 +117,11 @@ export const FieldTextIPv6Components: ComponentStory<typeof TextField> = (args) 
                 validate: validateIPv6Mask,
               }}
               textFieldProps={{
-                label: 'IPv6 Mask',
-                helperText: 'Enter an IPv6 Mask',
+                label: "IPv6 Mask",
+                helperText: "Enter an IPv6 Mask",
                 ...args,
                 inputProps: {
-                  placeholder: 'ex: 255.255.255.0',
+                  placeholder: "ex: 255.255.255.0",
                   ...args.inputProps,
                 },
               }}
@@ -134,11 +133,11 @@ export const FieldTextIPv6Components: ComponentStory<typeof TextField> = (args) 
                 validate: validateIPv6Number,
               }}
               textFieldProps={{
-                label: 'IPv6 Number',
-                helperText: 'Enter an IPv6 Number',
+                label: "IPv6 Number",
+                helperText: "Enter an IPv6 Number",
                 ...args,
                 inputProps: {
-                  placeholder: '127.0.0.1',
+                  placeholder: "127.0.0.1",
                   ...args.inputProps,
                 },
               }}
@@ -150,11 +149,11 @@ export const FieldTextIPv6Components: ComponentStory<typeof TextField> = (args) 
                 validate: validateIPv6Hexadecatet,
               }}
               textFieldProps={{
-                label: 'IPv6 Hexadecatet',
-                helperText: 'Enter an IPv6 Hexadecatet',
+                label: "IPv6 Hexadecatet",
+                helperText: "Enter an IPv6 Hexadecatet",
                 ...args,
                 inputProps: {
-                  placeholder: '255',
+                  placeholder: "255",
                   ...args.inputProps,
                 },
               }}
@@ -164,7 +163,7 @@ export const FieldTextIPv6Components: ComponentStory<typeof TextField> = (args) 
               type="submit"
               variant="outlined"
               sx={{
-                marginTop: '10px'
+                marginTop: "10px",
               }}
               fullWidth
             >
@@ -175,7 +174,7 @@ export const FieldTextIPv6Components: ComponentStory<typeof TextField> = (args) 
         <ReactHookFormStatePane sx={sxContainerPane} />
       </Box>
     </FormProvider>
-  )
-}
+  );
+};
 
-FieldTextIPv6Components.storyName = 'IPv6'
+FieldTextIPv6Components.storyName = "IPv6";

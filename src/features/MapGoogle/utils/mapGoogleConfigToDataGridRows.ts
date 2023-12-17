@@ -1,4 +1,4 @@
-import { IKeyValue, IMapGoogleConfig } from '../@types/interfaces'
+import { IKeyValue, IMapGoogleConfig } from "../@types/interfaces";
 
 export function mapGoogleConfigToDataGridRows(config: IMapGoogleConfig): IKeyValue[] {
   return Object.entries(config).map(([key, value]) => {
@@ -6,6 +6,6 @@ export function mapGoogleConfigToDataGridRows(config: IMapGoogleConfig): IKeyVal
       id: key,
       key,
       value,
-    }
-  })
+    };
+  });
 }

@@ -1,5 +1,5 @@
-import { ERegexNumber } from '../enums'
+import { ERegexNumber } from "../enums";
 
 export function isFloat(str: string): boolean {
-  return ERegexNumber.FLOAT.test(str)
+  return ERegexNumber.FLOAT.test(str);
 }

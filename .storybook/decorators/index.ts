@@ -1,1 +1,1 @@
-export * from './DecorateThemeProvider'
+export * from "./DecorateThemeProvider";

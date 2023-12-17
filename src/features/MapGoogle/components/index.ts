@@ -1,1 +1,1 @@
-export * from './MapGoogleConfigTable'
+export * from "./MapGoogleConfigTable";

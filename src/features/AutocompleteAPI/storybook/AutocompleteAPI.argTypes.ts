@@ -1,3 +1,1 @@
-export const AutocompleteAPIArgTypes = {
-
-}
+export const AutocompleteAPIArgTypes = {};

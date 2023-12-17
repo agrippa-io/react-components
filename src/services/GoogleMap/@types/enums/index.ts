@@ -1,1 +1,1 @@
-export * from './EPlaceType'
+export * from "./EPlaceType";

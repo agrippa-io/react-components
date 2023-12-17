@@ -1,15 +1,15 @@
-import { Validator } from 'ip-num'
+import { Validator } from "ip-num";
 
 export function validateIPv6CidrNotation(value: string) {
   if (!value) {
-    return true
+    return true;
   }
 
-  const [isValid, errors] = Validator.isValidIPv6CidrNotation(value)
+  const [isValid, errors] = Validator.isValidIPv6CidrNotation(value);
 
   if (errors.length) {
-    return errors.shift()
+    return errors.shift();
   }
 
-  return isValid
+  return isValid;
 }
