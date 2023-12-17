@@ -4635,6 +4635,13 @@
   dependencies:
     "@types/react" "*"
 
+"@types/react-html-email@^3.0.5":
+  version "3.0.5"
+  resolved "https://registry.yarnpkg.com/@types/react-html-email/-/react-html-email-3.0.5.tgz#9ba91e49fb721848a533679164513bc7b66d9039"
+  integrity sha512-IGrV0+FM/jnTz5gzuwzwZ+vFYQdspOZhBY9ZiMCZb0oliGox1CH35ox38ghKvUYIqnu7jz+TfuiUE7cBUL/YyA==
+  dependencies:
+    "@types/react" "*"
+
 "@types/react-is@^18.2.0":
   version "18.2.0"
   resolved "https://registry.yarnpkg.com/@types/react-is/-/react-is-18.2.0.tgz#2f5137853a46017b3d56447940fb3eb92bbf24a5"

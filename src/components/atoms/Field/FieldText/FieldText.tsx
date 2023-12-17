@@ -1,8 +1,8 @@
-import {TextFieldProps, TextField, } from '@mui/material'
-import { Controller, ControllerProps, } from 'react-hook-form'
+import { TextFieldProps, TextField } from "@mui/material";
+import { Controller, ControllerProps } from "react-hook-form";
 
-export interface IFieldTextProps extends Omit<ControllerProps, 'render'> {
-  textFieldProps: TextFieldProps
+export interface IFieldTextProps extends Omit<ControllerProps, "render"> {
+  textFieldProps: TextFieldProps;
 }
 
 export const FieldText = ({
@@ -21,11 +21,10 @@ export const FieldText = ({
     rules={rules}
     render={({
       field: { name, value, onBlur, onChange, ref },
-      fieldState: { error, invalid, isTouched, isDirty },
+      fieldState: { error, invalid /* isTouched, isDirty */ },
     }) => {
-
-      const errorMessage = error?.message
-      const helperTextActive = errorMessage || textFieldProps?.helperText
+      const errorMessage = error?.message;
+      const helperTextActive = errorMessage || textFieldProps?.helperText;
 
       return (
         <TextField
@@ -41,7 +40,7 @@ export const FieldText = ({
           aria-describedby={`${name}-helper-text`}
           helperText={helperTextActive}
         />
-      )
+      );
     }}
   />
-)
+);

@@ -1,15 +1,15 @@
-import React from 'react';
+import React from "react";
 
-import { ComponentMeta } from '@storybook/react';
+import { ComponentMeta } from "@storybook/react";
 
-import { MapGoogle } from '../MapGoogle.component';
-import { MapGoogleArgTypes } from './MapGoogle.argTypes';
+import { IMapGoogleProps } from "../@types";
+import { MapGoogle } from "../MapGoogle.component";
+import { MapGoogleArgTypes } from "./MapGoogle.argTypes";
 
 export default {
-  title: 'travel-react / Components / molecules / MapGoogle',
+  title: "travel-react / Components / molecules / MapGoogle",
   component: MapGoogle,
   argTypes: MapGoogleArgTypes,
 } as ComponentMeta<typeof MapGoogle>;
 
-// @ts-ignore
-export const MapGoogleOverview = ({ data, ...args }) => <MapGoogle config={args.config} debug={args.debug} />;
+export const MapGoogleOverview = (args: IMapGoogleProps) => <MapGoogle {...args} />;

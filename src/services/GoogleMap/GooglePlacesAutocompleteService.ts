@@ -1,27 +1,27 @@
-import { GoogleMapService, IGoogleMapServiceProps } from './GoogleMapService'
-
+import { GoogleMapService, IGoogleMapServiceProps } from "./GoogleMapService";
 
 export class GooglePlacesAutocompleteService extends GoogleMapService {
-  // @ts-ignore
-  api: google.maps.places.AutocompleteService
+  api: google.maps.places.AutocompleteService;
 
   constructor({ loaderOptions }: IGoogleMapServiceProps) {
     super({
       loaderOptions: {
         ...loaderOptions,
-        libraries: ['places']
-      }
+        libraries: ["places"],
+      },
     });
   }
 
   async init() {
     if (!this.api) {
-      await super.init()
-      this.api = new this.google.maps.places.AutocompleteService()
+      await super.init();
+      this.api = new this.google.maps.places.AutocompleteService();
     }
   }
 
-  async getPlacePredictions(request: google.maps.places.AutocompletionRequest): Promise<google.maps.places.AutocompleteResponse> {
-    return this.api.getPlacePredictions(request)
+  async getPlacePredictions(
+    request: google.maps.places.AutocompletionRequest,
+  ): Promise<google.maps.places.AutocompleteResponse> {
+    return this.api.getPlacePredictions(request);
   }
 }

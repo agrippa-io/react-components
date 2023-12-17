@@ -1,23 +1,26 @@
-import { useFormState, Control } from "react-hook-form"
+import { useFormState, Control } from "react-hook-form";
 import {
   Box,
-  Typography,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-} from "@mui/material"
-import {TableFields, FormStateTable} from './components'
+  // Typography,
+  // Accordion,
+  // AccordionSummary,
+  // AccordionDetails,
+} from "@mui/material";
+import {
+  /* TableFields, */
+  FormStateTable,
+} from "./components";
 
-const sxAccordionBody = {
-  backgroundColor: '#666666',
-}
+// const sxAccordionBody = {
+//   backgroundColor: '#666666',
+// }
 
 export interface ReactHookFormStatePaneProps {
-  sx?: any
-  control?: Control
-  name?: string
-  disabled?: boolean
-  exact?: boolean
+  sx?: any;
+  control?: Control;
+  name?: string;
+  disabled?: boolean;
+  exact?: boolean;
 }
 
 export const ReactHookFormStatePane = ({
@@ -29,9 +32,9 @@ export const ReactHookFormStatePane = ({
 }: ReactHookFormStatePaneProps) => {
   const {
     isDirty,
-    dirtyFields,
-    touchedFields,
-    defaultValues,
+    // dirtyFields,
+    // touchedFields,
+    // defaultValues,
     isSubmitted,
     isSubmitSuccessful,
     isSubmitting,
@@ -39,12 +42,12 @@ export const ReactHookFormStatePane = ({
     submitCount,
     isValid,
     isValidating,
-    errors,
+    // errors,
   } = useFormState({
     control,
     name,
     disabled,
-    exact
+    exact,
   });
 
   // const renderStateAccordion = (name: string, state: Record<any, any>) => {
@@ -71,10 +74,12 @@ export const ReactHookFormStatePane = ({
   // }
 
   return (
-    <Box sx={{
-      ...sx,
-      flexDirection: 'column',
-    }}>
+    <Box
+      sx={{
+        ...sx,
+        flexDirection: "column",
+      }}
+    >
       <FormStateTable
         isDirty={isDirty}
         isSubmitted={isSubmitted}
@@ -87,5 +92,5 @@ export const ReactHookFormStatePane = ({
       />
       {/*{renderStateAccordion('Errors', errors)}*/}
     </Box>
-  )
-}
+  );
+};

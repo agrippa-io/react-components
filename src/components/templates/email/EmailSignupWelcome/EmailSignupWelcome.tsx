@@ -1,5 +1,5 @@
 import React from "react";
-// @ts-ignore
+// @ts-expect-error react-html-email does not have type declarations
 import { A, Box, Email, Item, Image, Span } from "react-html-email";
 // import { EmailFooter } from "./EmailFooter";
 
@@ -43,10 +43,10 @@ const fluidItemStyle = {
 };
 
 export interface EmailSignupWelcomeProps {
-  subject: string
-  confirmationUrl: string
-  userName: string
-};
+  subject: string;
+  confirmationUrl: string;
+  userName: string;
+}
 
 export const EmailSignupWelcome = ({
   userName,
@@ -60,7 +60,7 @@ export const EmailSignupWelcome = ({
         <Image
           height="auto"
           src="https://s3.eu-central-1.amazonaws.com/images.ovrsea.com/Ovrsea-Logo-noir%2Bpicto.png"
-          style={{ margin: "0 auto "}}
+          style={{ margin: "0 auto " }}
           width={160}
         />
       </Item>
@@ -69,20 +69,22 @@ export const EmailSignupWelcome = ({
         <Box style={backgroundStyle}>
           <Item style={{ height: 40 }} />
           <Item>
-            <Span fontSize={22} fontWeight="bold">Welcome to OVRSEA&nbsp;</Span>
+            <Span fontSize={22} fontWeight="bold">
+              Welcome to OVRSEA&nbsp;
+            </Span>
           </Item>
           <Item style={{ height: 25 }} />
-          <Item>
-            Hello {userName}, we are happy to have you on board!
-          </Item>
+          <Item>Hello {userName}, we are happy to have you on board!</Item>
           <Item style={{ height: 25 }} />
           <Item>
-            To access the optimal experience for shipment management,
-            you only need to activate your account below.
+            To access the optimal experience for shipment management, you only need to activate your
+            account below.
           </Item>
           <Item style={{ height: 50 }} />
           <Item className="button" style={fluidItemStyle}>
-            <A href={confirmationUrl} style={linkStyle}>Activate my account</A>
+            <A href={confirmationUrl} style={linkStyle}>
+              Activate my account
+            </A>
           </Item>
           <Item style={{ height: 35 }} />
         </Box>
@@ -91,5 +93,3 @@ export const EmailSignupWelcome = ({
     </Email>
   </Box>
 );
-
-
