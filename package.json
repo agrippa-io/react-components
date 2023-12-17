@@ -49,23 +49,6 @@
     "test:app": "./node_modules/.bin/react-scripts test",
     "upgrade:storybook": "npx storybook upgrade && npx storybook@next automigrate"
   },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ],
-    "overrides": [
-      {
-        "files": [
-          "**/*.stories.*",
-          "**/*.story.*"
-        ],
-        "rules": {
-          "import/no-anonymous-default-export": "off"
-        }
-      }
-    ]
-  },
   "devDependencies": {
     "@agrippa-io/storybook-mui-5": "0.0.0-alpha.3",
     "@babel/core": "^7.20.2",
