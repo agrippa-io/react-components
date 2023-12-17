@@ -66,13 +66,6 @@
       }
     ]
   },
-  "lint-staged": {
-    "*.{ts,tsx}": [
-      "yarn format",
-      "yarn lint",
-      "yarn test"
-    ]
-  },
   "browserslist": {
     "production": [
       ">0.2%",
