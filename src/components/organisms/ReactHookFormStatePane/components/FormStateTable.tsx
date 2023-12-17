@@ -8,25 +8,25 @@ import {
   TableHead,
   TableRow,
   Typography,
-} from "@mui/material";
+} from '@mui/material'
 
 const sxAccordionBody = {
-  backgroundColor: "#666666",
-};
+  backgroundColor: '#666666',
+}
 
 const boolToString = (value: boolean): string => {
-  return value ? "true" : "false";
-};
+  return value ? 'true' : 'false'
+}
 
 export interface FormStateTableProps {
-  isDirty: boolean;
-  isSubmitted: boolean;
-  isSubmitSuccessful: boolean;
-  isSubmitting: boolean;
-  isLoading: boolean;
-  submitCount: number;
-  isValid: boolean;
-  isValidating: boolean;
+  isDirty: boolean
+  isSubmitted: boolean
+  isSubmitSuccessful: boolean
+  isSubmitting: boolean
+  isLoading: boolean
+  submitCount: number
+  isValid: boolean
+  isValidating: boolean
 }
 
 export const FormStateTable = ({
@@ -50,7 +50,7 @@ export const FormStateTable = ({
   //   isValidating,
   // })
   return (
-    <Accordion sx={{ width: "100%" }} defaultExpanded={true}>
+    <Accordion sx={{ width: '100%' }} defaultExpanded={true}>
       <AccordionSummary>
         <Typography>Form State</Typography>
       </AccordionSummary>
@@ -100,5 +100,5 @@ export const FormStateTable = ({
         </Table>
       </AccordionDetails>
     </Accordion>
-  );
-};
+  )
+}

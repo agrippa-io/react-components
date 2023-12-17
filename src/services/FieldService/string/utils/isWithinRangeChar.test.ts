@@ -1,68 +1,68 @@
-import { isWithinRangeChar } from "./isWithinRangeChar";
+import { isWithinRangeChar } from './isWithinRangeChar'
 
-describe("FormService - string - utils - isWithinRangeChar(value: string)", () => {
-  const min: number = 5;
-  const max: number = 10;
-  let value: string;
-  let actual: boolean;
+describe('FormService - string - utils - isWithinRangeChar(value: string)', () => {
+  const min: number = 5
+  const max: number = 10
+  let value: string
+  let actual: boolean
 
-  describe("Below Min", () => {
+  describe('Below Min', () => {
     beforeEach(() => {
-      value = "RACE";
-    });
+      value = 'RACE'
+    })
 
-    it("should return true when length less than min", () => {
-      actual = isWithinRangeChar(value, min, max);
+    it('should return true when length less than min', () => {
+      actual = isWithinRangeChar(value, min, max)
 
-      expect(actual).toEqual(false);
-    });
-  });
+      expect(actual).toEqual(false)
+    })
+  })
 
-  describe("Match Min", () => {
+  describe('Match Min', () => {
     beforeEach(() => {
-      value = "RACER";
-    });
+      value = 'RACER'
+    })
 
-    it("should return true when length equal to min", () => {
-      actual = isWithinRangeChar(value, min, max);
+    it('should return true when length equal to min', () => {
+      actual = isWithinRangeChar(value, min, max)
 
-      expect(actual).toEqual(true);
-    });
-  });
+      expect(actual).toEqual(true)
+    })
+  })
 
-  describe("Inside Range", () => {
+  describe('Inside Range', () => {
     beforeEach(() => {
-      value = "RACECAR";
-    });
+      value = 'RACECAR'
+    })
 
-    it("should return false when length inside range", () => {
-      actual = isWithinRangeChar(value, min, max);
+    it('should return false when length inside range', () => {
+      actual = isWithinRangeChar(value, min, max)
 
-      expect(actual).toEqual(true);
-    });
-  });
+      expect(actual).toEqual(true)
+    })
+  })
 
-  describe("Match Max", () => {
+  describe('Match Max', () => {
     beforeEach(() => {
-      value = "RACER FIVE";
-    });
+      value = 'RACER FIVE'
+    })
 
-    it("should return true when length equal to max", () => {
-      actual = isWithinRangeChar(value, min, max);
+    it('should return true when length equal to max', () => {
+      actual = isWithinRangeChar(value, min, max)
 
-      expect(actual).toEqual(true);
-    });
-  });
+      expect(actual).toEqual(true)
+    })
+  })
 
-  describe("Above Max", () => {
+  describe('Above Max', () => {
     beforeEach(() => {
-      value = "RACER SEVEN";
-    });
+      value = 'RACER SEVEN'
+    })
 
-    it("should return false when length greater than max", () => {
-      actual = isWithinRangeChar(value, min, max);
+    it('should return false when length greater than max', () => {
+      actual = isWithinRangeChar(value, min, max)
 
-      expect(actual).toEqual(false);
-    });
-  });
-});
+      expect(actual).toEqual(false)
+    })
+  })
+})

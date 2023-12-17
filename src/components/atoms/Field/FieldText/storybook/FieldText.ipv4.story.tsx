@@ -1,9 +1,9 @@
-import { ComponentStory, ComponentMeta } from "@storybook/react";
+import { ComponentStory, ComponentMeta } from '@storybook/react'
 
-import { FieldText } from "../FieldText";
-import { FormProvider, useForm } from "react-hook-form";
-import { Box, Button, TextField } from "@mui/material";
-import { ReactHookFormStatePane } from "../../../../organisms/ReactHookFormStatePane";
+import { FieldText } from '../FieldText'
+import { FormProvider, useForm } from 'react-hook-form'
+import { Box, Button, TextField } from '@mui/material'
+import { ReactHookFormStatePane } from '../../../../organisms/ReactHookFormStatePane'
 import {
   validateIPv4String,
   validateIPv4RangeString,
@@ -12,35 +12,35 @@ import {
   validateIPv4Mask,
   validateIPv4Number,
   validateIPv4Octet,
-} from "../../../../../services";
-import { argTypesTextField } from "../../../../../constants";
+} from '../../../../../services'
+import { argTypesTextField } from '../../../../../constants'
 
 const sxContainerRoot = {
-  display: "flex",
-  direction: "row",
-  flexBasis: "100%",
-};
+  display: 'flex',
+  direction: 'row',
+  flexBasis: '100%',
+}
 
 const sxContainerPane = {
-  display: "flex",
-  direction: "column",
-  flexBasis: "50%",
-  margin: "0 5px",
-};
+  display: 'flex',
+  direction: 'column',
+  flexBasis: '50%',
+  margin: '0 5px',
+}
 
 export default {
-  title: "Components / atoms / Field / FieldText / IP",
-  name: "IPv4",
+  title: 'Components / atoms / Field / FieldText / IP',
+  name: 'IPv4',
   component: FieldText,
   argTypes: argTypesTextField,
-} as ComponentMeta<typeof FieldText>;
+} as ComponentMeta<typeof FieldText>
 
 // TODO - Replace placeholders with valid examples
 export const FieldTextIPv4Components: ComponentStory<typeof TextField> = (args) => {
   const formProviderProps = useForm({
-    mode: "onChange",
-  });
-  const onSubmit = (data: any) => console.log("Form Data", data);
+    mode: 'onChange',
+  })
+  const onSubmit = (data: any) => console.log('Form Data', data)
 
   return (
     <FormProvider {...formProviderProps}>
@@ -53,11 +53,11 @@ export const FieldTextIPv4Components: ComponentStory<typeof TextField> = (args) 
                 validate: validateIPv4String,
               }}
               textFieldProps={{
-                label: "IPv4 String",
-                helperText: "Enter an IPv4 String",
+                label: 'IPv4 String',
+                helperText: 'Enter an IPv4 String',
                 ...args,
                 inputProps: {
-                  placeholder: "ex: 127.0.0.1",
+                  placeholder: 'ex: 127.0.0.1',
                   ...args.inputProps,
                 },
               }}
@@ -69,11 +69,11 @@ export const FieldTextIPv4Components: ComponentStory<typeof TextField> = (args) 
                 validate: validateIPv4RangeString,
               }}
               textFieldProps={{
-                label: "IPv4 Range",
-                helperText: "Enter an IPv4 Range",
+                label: 'IPv4 Range',
+                helperText: 'Enter an IPv4 Range',
                 ...args,
                 inputProps: {
-                  placeholder: "ex: 1.0.0.0-1.2.3.4",
+                  placeholder: 'ex: 1.0.0.0-1.2.3.4',
                   ...args.inputProps,
                 },
               }}
@@ -85,11 +85,11 @@ export const FieldTextIPv4Components: ComponentStory<typeof TextField> = (args) 
                 validate: validateIPv4CidrNotation,
               }}
               textFieldProps={{
-                label: "IPv4 Cidr Notation",
-                helperText: "Enter an IPv4 Cidr Notation",
+                label: 'IPv4 Cidr Notation',
+                helperText: 'Enter an IPv4 Cidr Notation',
                 ...args,
                 inputProps: {
-                  placeholder: "ex: 127.0.0.1/10",
+                  placeholder: 'ex: 127.0.0.1/10',
                   ...args.inputProps,
                 },
               }}
@@ -101,11 +101,11 @@ export const FieldTextIPv4Components: ComponentStory<typeof TextField> = (args) 
                 validate: validateIPv4CidrRange,
               }}
               textFieldProps={{
-                label: "IPv4 Cidr Range",
-                helperText: "Enter an IPv4 Cidr Range",
+                label: 'IPv4 Cidr Range',
+                helperText: 'Enter an IPv4 Cidr Range',
                 ...args,
                 inputProps: {
-                  placeholder: "ex: 127.0.0.0/10",
+                  placeholder: 'ex: 127.0.0.0/10',
                   ...args.inputProps,
                 },
               }}
@@ -117,11 +117,11 @@ export const FieldTextIPv4Components: ComponentStory<typeof TextField> = (args) 
                 validate: validateIPv4Mask,
               }}
               textFieldProps={{
-                label: "IPv4 Mask",
-                helperText: "Enter an IPv4 Mask",
+                label: 'IPv4 Mask',
+                helperText: 'Enter an IPv4 Mask',
                 ...args,
                 inputProps: {
-                  placeholder: "ex: 255.255.255.0",
+                  placeholder: 'ex: 255.255.255.0',
                   ...args.inputProps,
                 },
               }}
@@ -133,11 +133,11 @@ export const FieldTextIPv4Components: ComponentStory<typeof TextField> = (args) 
                 validate: validateIPv4Number,
               }}
               textFieldProps={{
-                label: "IPv4 Number",
-                helperText: "Enter an IPv4 Number",
+                label: 'IPv4 Number',
+                helperText: 'Enter an IPv4 Number',
                 ...args,
                 inputProps: {
-                  placeholder: "127.0.0.1",
+                  placeholder: '127.0.0.1',
                   ...args.inputProps,
                 },
               }}
@@ -149,11 +149,11 @@ export const FieldTextIPv4Components: ComponentStory<typeof TextField> = (args) 
                 validate: validateIPv4Octet,
               }}
               textFieldProps={{
-                label: "IPv4 Octet",
-                helperText: "Enter an IPv4 Octet",
+                label: 'IPv4 Octet',
+                helperText: 'Enter an IPv4 Octet',
                 ...args,
                 inputProps: {
-                  placeholder: "255",
+                  placeholder: '255',
                   ...args.inputProps,
                 },
               }}
@@ -163,7 +163,7 @@ export const FieldTextIPv4Components: ComponentStory<typeof TextField> = (args) 
               type="submit"
               variant="outlined"
               sx={{
-                marginTop: "10px",
+                marginTop: '10px',
               }}
               fullWidth
             >
@@ -174,7 +174,7 @@ export const FieldTextIPv4Components: ComponentStory<typeof TextField> = (args) 
         <ReactHookFormStatePane sx={sxContainerPane} />
       </Box>
     </FormProvider>
-  );
-};
+  )
+}
 
-FieldTextIPv4Components.storyName = "IPv4";
+FieldTextIPv4Components.storyName = 'IPv4'

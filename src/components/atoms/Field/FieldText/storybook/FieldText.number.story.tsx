@@ -1,35 +1,35 @@
-import { ComponentStory, ComponentMeta } from "@storybook/react";
+import { ComponentStory, ComponentMeta } from '@storybook/react'
 
-import { FieldText } from "../FieldText";
-import { FormProvider, useForm } from "react-hook-form";
-import { Box, Button, TextField } from "@mui/material";
-import { ReactHookFormStatePane } from "../../../../organisms/ReactHookFormStatePane";
-import { validateFloat, validateInteger, validateNumber } from "../../../../../services";
-import { argTypesTextField } from "../../../../../constants";
+import { FieldText } from '../FieldText'
+import { FormProvider, useForm } from 'react-hook-form'
+import { Box, Button, TextField } from '@mui/material'
+import { ReactHookFormStatePane } from '../../../../organisms/ReactHookFormStatePane'
+import { validateFloat, validateInteger, validateNumber } from '../../../../../services'
+import { argTypesTextField } from '../../../../../constants'
 
 const sxContainerRoot = {
-  display: "flex",
-  direction: "row",
-  flexBasis: "100%",
-};
+  display: 'flex',
+  direction: 'row',
+  flexBasis: '100%',
+}
 
 const sxContainerPane = {
-  display: "flex",
-  direction: "column",
-  flexBasis: "50%",
-};
+  display: 'flex',
+  direction: 'column',
+  flexBasis: '50%',
+}
 
 export default {
-  title: "Components / atoms / Field / FieldText / Number",
+  title: 'Components / atoms / Field / FieldText / Number',
   component: FieldText,
   argTypes: argTypesTextField,
-} as ComponentMeta<typeof FieldText>;
+} as ComponentMeta<typeof FieldText>
 
 export const FieldTextNumberComponent: ComponentStory<typeof TextField> = (args) => {
   const formProviderProps = useForm({
-    mode: "onChange",
-  });
-  const onSubmit = (data: any) => console.log("Form Data", data);
+    mode: 'onChange',
+  })
+  const onSubmit = (data: any) => console.log('Form Data', data)
 
   return (
     <FormProvider {...formProviderProps}>
@@ -42,11 +42,11 @@ export const FieldTextNumberComponent: ComponentStory<typeof TextField> = (args)
                 validate: validateNumber({}),
               }}
               textFieldProps={{
-                label: "Number",
-                helperText: "Enter a number",
+                label: 'Number',
+                helperText: 'Enter a number',
                 ...args,
                 inputProps: {
-                  placeholder: "Enter a number",
+                  placeholder: 'Enter a number',
                   ...(args?.inputProps ?? {}),
                 },
               }}
@@ -58,11 +58,11 @@ export const FieldTextNumberComponent: ComponentStory<typeof TextField> = (args)
                 validate: validateInteger({}),
               }}
               textFieldProps={{
-                label: "Integer",
-                helperText: "Enter a integer",
+                label: 'Integer',
+                helperText: 'Enter a integer',
                 ...args,
                 inputProps: {
-                  placeholder: "Enter a integer",
+                  placeholder: 'Enter a integer',
                   ...(args?.inputProps ?? {}),
                 },
               }}
@@ -74,11 +74,11 @@ export const FieldTextNumberComponent: ComponentStory<typeof TextField> = (args)
                 validate: validateFloat({}),
               }}
               textFieldProps={{
-                label: "Float",
-                helperText: "Enter a float",
+                label: 'Float',
+                helperText: 'Enter a float',
                 ...args,
                 inputProps: {
-                  placeholder: "Enter a float",
+                  placeholder: 'Enter a float',
                   ...(args?.inputProps ?? {}),
                 },
               }}
@@ -90,5 +90,5 @@ export const FieldTextNumberComponent: ComponentStory<typeof TextField> = (args)
         <ReactHookFormStatePane sx={sxContainerPane} />
       </Box>
     </FormProvider>
-  );
-};
+  )
+}

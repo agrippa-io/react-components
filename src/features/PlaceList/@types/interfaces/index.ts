@@ -1,1 +1,1 @@
-export * from "./IPlaceListItemProps";
+export * from './IPlaceListItemProps'

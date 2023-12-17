@@ -1,19 +1,19 @@
-import { Validator } from "ip-num";
+import { Validator } from 'ip-num'
 
 export function validateIPv4Octet(value: string) {
   if (!value) {
-    return true;
+    return true
   }
 
   try {
-    const [isValid, errors] = Validator.isValidIPv4Octet(BigInt(value));
+    const [isValid, errors] = Validator.isValidIPv4Octet(BigInt(value))
 
     if (errors.length) {
-      return errors.shift();
+      return errors.shift()
     }
 
-    return isValid;
+    return isValid
   } catch (err) {
-    return "Value is not a number";
+    return 'Value is not a number'
   }
 }

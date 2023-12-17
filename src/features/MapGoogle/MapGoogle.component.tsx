@@ -1,27 +1,27 @@
-import React from "react";
+import React from 'react'
 
-import { Box } from "@mui/material";
-import GoogleMapReact from "google-map-react";
-import { IMapGoogleProps } from "./@types";
-import { MapGoogleConfigTable } from "./components/MapGoogleConfigTable";
+import { Box } from '@mui/material'
+import GoogleMapReact from 'google-map-react'
+import { IMapGoogleProps } from './@types'
+import { MapGoogleConfigTable } from './components/MapGoogleConfigTable'
 
 interface IMarkerSimple {
-  lat: number;
-  lng: number;
-  text: string;
+  lat: number
+  lng: number
+  text: string
 }
 const MarkerSimple = ({ lat, lng, text }: IMarkerSimple) => (
   <div>
     {text} (lat: {lat}, lng: {lng})
   </div>
-);
+)
 const defaultProps = {
   center: {
     lat: 10.99835602,
     lng: 77.01502627,
   },
   zoom: 11,
-};
+}
 
 export function MapGoogle({ config, debug = false }: IMapGoogleProps) {
   return (
@@ -37,5 +37,5 @@ export function MapGoogle({ config, debug = false }: IMapGoogleProps) {
       </Box>
       <MapGoogleConfigTable config={config} debug={debug} />
     </>
-  );
+  )
 }

@@ -1,15 +1,15 @@
-import { Validator } from "ip-num";
+import { Validator } from 'ip-num'
 
 export function validateIPv4CidrRange(value: string) {
   if (!value) {
-    return true;
+    return true
   }
 
-  const [isValid, errors] = Validator.isValidIPv4CidrRange(value);
+  const [isValid, errors] = Validator.isValidIPv4CidrRange(value)
 
   if (errors.length) {
-    return errors.shift();
+    return errors.shift()
   }
 
-  return isValid;
+  return isValid
 }

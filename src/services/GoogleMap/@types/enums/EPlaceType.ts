@@ -1,6 +1,6 @@
 export enum EPlaceType {
-  BUSINESS = "business",
-  LANDMARK = "landmark",
-  PARK = "park",
-  INTERSECTION = "intersection",
+  BUSINESS = 'business',
+  LANDMARK = 'landmark',
+  PARK = 'park',
+  INTERSECTION = 'intersection',
 }

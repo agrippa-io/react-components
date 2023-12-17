@@ -1,9 +1,9 @@
-import isEmpty from "lodash";
-import { Table, TableBody, TableCell, TableHead, TableRow } from "@mui/material";
+import isEmpty from 'lodash'
+import { Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material'
 
 export interface TableFieldRowProps {
-  state: Record<any, any>;
-  emptyMessage: string;
+  state: Record<any, any>
+  emptyMessage: string
 }
 
 export const TableFieldRow = ({ state, emptyMessage }: TableFieldRowProps) => {
@@ -12,7 +12,7 @@ export const TableFieldRow = ({ state, emptyMessage }: TableFieldRowProps) => {
       <TableRow>
         <TableCell colSpan={2}>{emptyMessage}</TableCell>
       </TableRow>
-    );
+    )
   }
 
   return (
@@ -26,17 +26,17 @@ export const TableFieldRow = ({ state, emptyMessage }: TableFieldRowProps) => {
         </TableRow>
       ))}
     </>
-  );
-};
-
-export interface TableFieldsProps {
-  sx?: any;
-  name: string;
-  state: Record<any, any>;
-  emptyMessage?: string;
+  )
 }
 
-export const TableFields = ({ sx, name, state, emptyMessage = "No Data" }: TableFieldsProps) => {
+export interface TableFieldsProps {
+  sx?: any
+  name: string
+  state: Record<any, any>
+  emptyMessage?: string
+}
+
+export const TableFields = ({ sx, name, state, emptyMessage = 'No Data' }: TableFieldsProps) => {
   return (
     <Table sx={sx}>
       <TableHead>
@@ -52,19 +52,19 @@ export const TableFields = ({ sx, name, state, emptyMessage = "No Data" }: Table
         <TableFieldRow state={state} emptyMessage={emptyMessage} />
       </TableBody>
     </Table>
-  );
-};
+  )
+}
 
 const renderStateObjectAsTable = (state: Record<any, any>) =>
   Object.entries(state).reduce((listItems, [key, value]) => {
-    if (key !== "ref") {
+    if (key !== 'ref') {
       listItems.push(
         <TableRow>
           <TableCell>{key}</TableCell>
           <TableCell>{value as string}</TableCell>
         </TableRow>,
-      );
+      )
     }
 
-    return listItems;
-  }, [] as any[]);
+    return listItems
+  }, [] as any[])

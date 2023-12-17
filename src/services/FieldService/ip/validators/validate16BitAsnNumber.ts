@@ -1,15 +1,15 @@
-import { Validator } from "ip-num";
+import { Validator } from 'ip-num'
 
 export function validate16BitAsnNumber(value: string) {
   if (!value) {
-    return true;
+    return true
   }
 
-  const [isValid, errors] = Validator.isValid16BitAsnNumber(BigInt(value));
+  const [isValid, errors] = Validator.isValid16BitAsnNumber(BigInt(value))
 
   if (errors.length) {
-    return errors.shift();
+    return errors.shift()
   }
 
-  return isValid;
+  return isValid
 }

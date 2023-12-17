@@ -1,1 +1,1 @@
-export * from "./MapGoogle.config";
+export * from './MapGoogle.config'

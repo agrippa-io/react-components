@@ -1,38 +1,38 @@
 export const options = [
   {
     id: 0,
-    label: "Alpha",
+    label: 'Alpha',
   },
   {
     id: 1,
-    label: "Ampliphy",
+    label: 'Ampliphy',
   },
   {
     id: 2,
-    label: "Apple",
+    label: 'Apple',
   },
   {
     id: 3,
-    label: "Beta",
+    label: 'Beta',
   },
   {
     id: 4,
-    label: "Base",
+    label: 'Base',
   },
   {
     id: 5,
-    label: "Blueberry",
+    label: 'Blueberry',
   },
   {
     id: 6,
-    label: "Charly",
+    label: 'Charly',
   },
   {
     id: 7,
-    label: "Crescendo",
+    label: 'Crescendo',
   },
   {
     id: 8,
-    label: "Cherry",
+    label: 'Cherry',
   },
-];
+]

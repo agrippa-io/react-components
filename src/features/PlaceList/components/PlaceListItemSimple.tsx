@@ -1,12 +1,12 @@
-import React, { MouseEvent } from "react";
+import React, { MouseEvent } from 'react'
 
-import { IPlaceListItemProps } from "../@types";
-import { ListItemButton, ListItemText } from "@mui/material";
+import { IPlaceListItemProps } from '../@types'
+import { ListItemButton, ListItemText } from '@mui/material'
 
 export interface IPlaceListItemSimple extends IPlaceListItemProps {}
 
 export function PlaceListItemSimple({ place, onClick = () => {} }: IPlaceListItemSimple) {
-  console.log("PlaceListItemDetailed(props)", { place });
+  console.log('PlaceListItemDetailed(props)', { place })
 
   const forwardEventWithTargetValue = (e: MouseEvent) => {
     onClick({
@@ -15,12 +15,12 @@ export function PlaceListItemSimple({ place, onClick = () => {} }: IPlaceListIte
         ...e.target,
         value: place,
       },
-    } as MouseEvent);
-  };
+    } as MouseEvent)
+  }
 
   return (
     <ListItemButton onClick={forwardEventWithTargetValue}>
-      <ListItemText>{place?.businessName ?? "No Name"}</ListItemText>
+      <ListItemText>{place?.businessName ?? 'No Name'}</ListItemText>
     </ListItemButton>
-  );
+  )
 }

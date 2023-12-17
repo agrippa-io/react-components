@@ -1,7 +1,7 @@
-import React, { useCallback } from "react";
-import { Autocomplete, AutocompleteRenderInputParams, Box, TextField } from "@mui/material";
-import debounce from "lodash/debounce";
-import { AutocompleteProps } from "@mui/material/Autocomplete/Autocomplete";
+import React, { useCallback } from 'react'
+import { Autocomplete, AutocompleteRenderInputParams, Box, TextField } from '@mui/material'
+import debounce from 'lodash/debounce'
+import { AutocompleteProps } from '@mui/material/Autocomplete/Autocomplete'
 
 export interface IAutocompleteAPIProps<
   T = any,
@@ -10,12 +10,12 @@ export interface IAutocompleteAPIProps<
   FreeSolo extends boolean | undefined = undefined,
 > extends Omit<
     AutocompleteProps<T, Multiple, DisableClearable, FreeSolo>,
-    "options" | "renderInput"
+    'options' | 'renderInput'
   > {
-  options?: T[];
-  renderInput?: (params: AutocompleteRenderInputParams) => React.ReactNode;
-  debounceInterval?: number;
-  debounceOptions?: object;
+  options?: T[]
+  renderInput?: (params: AutocompleteRenderInputParams) => React.ReactNode
+  debounceInterval?: number
+  debounceOptions?: object
 }
 
 export function AutocompleteAPI<
@@ -37,27 +37,27 @@ export function AutocompleteAPI<
   const onInputChangeDebounce = useCallback(
     debounce(
       (event, query, reason) => {
-        onInputChange && onInputChange(event, query, reason);
+        onInputChange && onInputChange(event, query, reason)
       },
       debounceInterval,
       debounceOptions,
     ),
     [onInputChange, debounceInterval, debounceOptions],
-  );
+  )
 
-  const getOptionLabelFallback = (option: T) => option?.label ?? option;
+  const getOptionLabelFallback = (option: T) => option?.label ?? option
 
   const renderOptionFallback = (props: any, option: T) => {
     return (
       <Box component="li" key={option.id} {...props}>
         {option.label}
       </Box>
-    );
-  };
+    )
+  }
 
   const renderInputFallback = (params: AutocompleteRenderInputParams) => {
-    return <TextField {...params} placeholder="Search..." />;
-  };
+    return <TextField {...params} placeholder="Search..." />
+  }
 
   return (
     <Autocomplete
@@ -69,5 +69,5 @@ export function AutocompleteAPI<
       onChange={onChange}
       onInputChange={onInputChangeDebounce}
     />
-  );
+  )
 }

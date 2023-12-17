@@ -1,26 +1,26 @@
-import { useFormState, Control } from "react-hook-form";
+import { useFormState, Control } from 'react-hook-form'
 import {
   Box,
   // Typography,
   // Accordion,
   // AccordionSummary,
   // AccordionDetails,
-} from "@mui/material";
+} from '@mui/material'
 import {
   /* TableFields, */
   FormStateTable,
-} from "./components";
+} from './components'
 
 // const sxAccordionBody = {
 //   backgroundColor: '#666666',
 // }
 
 export interface ReactHookFormStatePaneProps {
-  sx?: any;
-  control?: Control;
-  name?: string;
-  disabled?: boolean;
-  exact?: boolean;
+  sx?: any
+  control?: Control
+  name?: string
+  disabled?: boolean
+  exact?: boolean
 }
 
 export const ReactHookFormStatePane = ({
@@ -48,7 +48,7 @@ export const ReactHookFormStatePane = ({
     name,
     disabled,
     exact,
-  });
+  })
 
   // const renderStateAccordion = (name: string, state: Record<any, any>) => {
   //   console.log('renderStateAccordion', {
@@ -77,7 +77,7 @@ export const ReactHookFormStatePane = ({
     <Box
       sx={{
         ...sx,
-        flexDirection: "column",
+        flexDirection: 'column',
       }}
     >
       <FormStateTable
@@ -92,5 +92,5 @@ export const ReactHookFormStatePane = ({
       />
       {/*{renderStateAccordion('Errors', errors)}*/}
     </Box>
-  );
-};
+  )
+}

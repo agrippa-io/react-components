@@ -1,1 +1,1 @@
-export * from "./AutocompleteAPI.component";
+export * from './AutocompleteAPI.component'

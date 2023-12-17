@@ -1,23 +1,23 @@
-import React from "react";
-import { IMapGoogleProps } from "../@types/interfaces/IMapGoogleProps";
-import { Box } from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
-import { mapGoogleConfigToDataGridRows } from "../utils";
+import React from 'react'
+import { IMapGoogleProps } from '../@types/interfaces/IMapGoogleProps'
+import { Box } from '@mui/material'
+import { DataGrid } from '@mui/x-data-grid'
+import { mapGoogleConfigToDataGridRows } from '../utils'
 
 const columns = [
-  { field: "key", headerName: "Key" },
-  { field: "value", headerName: "Value" },
-];
+  { field: 'key', headerName: 'Key' },
+  { field: 'value', headerName: 'Value' },
+]
 
 export function MapGoogleConfigTable({ config, debug = false }: IMapGoogleProps) {
   if (!debug) {
-    return null;
+    return null
   }
 
-  const rows = mapGoogleConfigToDataGridRows(config);
+  const rows = mapGoogleConfigToDataGridRows(config)
 
   return (
-    <Box sx={{ height: 400, width: "100%" }}>
+    <Box sx={{ height: 400, width: '100%' }}>
       <DataGrid
         columns={columns}
         rows={rows}
@@ -27,5 +27,5 @@ export function MapGoogleConfigTable({ config, debug = false }: IMapGoogleProps)
         pageSize={25}
       />
     </Box>
-  );
+  )
 }

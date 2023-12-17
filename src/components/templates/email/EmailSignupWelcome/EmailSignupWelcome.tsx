@@ -1,51 +1,51 @@
-import React from "react";
+import React from 'react'
 // @ts-expect-error react-html-email does not have type declarations
-import { A, Box, Email, Item, Image, Span } from "react-html-email";
+import { A, Box, Email, Item, Image, Span } from 'react-html-email'
 // import { EmailFooter } from "./EmailFooter";
 
 const emailHeadCSS = `
   body {
     background-color: #F5F8FA;
   }
-`.trim();
+`.trim()
 
 const backgroundStyle = {
-  WebkitBoxShadow: "6px 6px 40px 3px rgba(140, 152, 164, 0.2)",
-  backgroundColor: "#FFF",
+  WebkitBoxShadow: '6px 6px 40px 3px rgba(140, 152, 164, 0.2)',
+  backgroundColor: '#FFF',
   borderRadius: 7,
-  boxShadow: "6px 6px 40px 3px rgba(140, 152, 164, 0.2)",
-  margin: "0 auto",
-  width: "100%",
-  padding: "0 32px",
-};
+  boxShadow: '6px 6px 40px 3px rgba(140, 152, 164, 0.2)',
+  margin: '0 auto',
+  width: '100%',
+  padding: '0 32px',
+}
 
 const containerStyle = {
-  backgroundColor: "#F5F8FA",
-  width: "100%",
-};
+  backgroundColor: '#F5F8FA',
+  width: '100%',
+}
 
 const linkStyle = {
-  color: "white",
-  display: "block",
-  paddingBottom: "13px",
-  paddingTop: "13px",
-  textDecoration: "none",
-  width: "100%",
-};
+  color: 'white',
+  display: 'block',
+  paddingBottom: '13px',
+  paddingTop: '13px',
+  textDecoration: 'none',
+  width: '100%',
+}
 
 const fluidItemStyle = {
-  backgroundColor: "rgb(59, 139, 128)",
+  backgroundColor: 'rgb(59, 139, 128)',
   borderRadius: 4,
-  cursor: "pointer",
+  cursor: 'pointer',
   height: 48,
-  textAlign: "center",
-  textDecoration: "none",
-};
+  textAlign: 'center',
+  textDecoration: 'none',
+}
 
 export interface EmailSignupWelcomeProps {
-  subject: string;
-  confirmationUrl: string;
-  userName: string;
+  subject: string
+  confirmationUrl: string
+  userName: string
 }
 
 export const EmailSignupWelcome = ({
@@ -60,7 +60,7 @@ export const EmailSignupWelcome = ({
         <Image
           height="auto"
           src="https://s3.eu-central-1.amazonaws.com/images.ovrsea.com/Ovrsea-Logo-noir%2Bpicto.png"
-          style={{ margin: "0 auto " }}
+          style={{ margin: '0 auto ' }}
           width={160}
         />
       </Item>
@@ -92,4 +92,4 @@ export const EmailSignupWelcome = ({
       </Item>
     </Email>
   </Box>
-);
+)
