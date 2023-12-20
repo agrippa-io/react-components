@@ -16,8 +16,6 @@
 /coverage
 
 # production
-/build
-/dist
 /storybook-static
 
 # development
