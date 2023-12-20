@@ -17,7 +17,7 @@
   // Extend various ESLint configurations and plugins
   "extends": [
     "eslint:recommended",                   // ESLint recommended rules
-    "plugin:react/recommended",             // React recommended rules
+//    "plugin:react/recommended",             // React recommended rules
     "plugin:@typescript-eslint/recommended", // TypeScript recommended rules
     "plugin:@typescript-eslint/eslint-recommended", // ESLint overrides for TypeScript
     "prettier",                             // Prettier rules

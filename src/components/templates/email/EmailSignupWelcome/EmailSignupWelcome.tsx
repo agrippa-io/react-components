@@ -1,5 +1,4 @@
 import React from 'react'
-// @ts-expect-error react-html-email does not have type declarations
 import { A, Box, Email, Item, Image, Span } from 'react-html-email'
 // import { EmailFooter } from "./EmailFooter";
 
@@ -38,7 +37,7 @@ const fluidItemStyle = {
   borderRadius: 4,
   cursor: 'pointer',
   height: 48,
-  textAlign: 'center',
+  textAlign: 'center' as const,
   textDecoration: 'none',
 }
 
@@ -58,10 +57,11 @@ export const EmailSignupWelcome = ({
       <Item style={{ height: 45 }} />
       <Item>
         <Image
-          height="auto"
           src="https://s3.eu-central-1.amazonaws.com/images.ovrsea.com/Ovrsea-Logo-noir%2Bpicto.png"
           style={{ margin: '0 auto ' }}
           width={160}
+          height={40}
+          alt="Ovrsea Logo"
         />
       </Item>
       <Item style={{ height: 30 }} />
@@ -89,6 +89,7 @@ export const EmailSignupWelcome = ({
           <Item style={{ height: 35 }} />
         </Box>
         {/*<EmailFooter />*/}
+        <Box style={{ height: 35 }}>&nbsp;</Box>
       </Item>
     </Email>
   </Box>

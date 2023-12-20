@@ -13,7 +13,7 @@ import {
   validateIPv6Number,
   validateIPv6Hexadecatet,
 } from '../../../../../services'
-import { argTypesTextField } from '../../../../../constants'
+import { argTypesTextField } from './TextField.argTypes'
 
 const sxContainerRoot = {
   display: 'flex',

@@ -10,6 +10,9 @@ export default {
   title: 'travel-react / Components / molecules / PlaceList',
   component: PlaceList,
   argTypes: {},
+  args: {
+    apiKey: 'AIzaSyAcSRijbcKe4P5jMm1ze6t8S608Tl53K3o',
+  },
 } as ComponentMeta<typeof PlaceList>
 
 export const PlaceListSimple = (args: IPlaceListProps) => <PlaceList {...args} />

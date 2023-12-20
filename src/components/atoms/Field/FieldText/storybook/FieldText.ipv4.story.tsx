@@ -3,7 +3,7 @@ import { ComponentStory, ComponentMeta } from '@storybook/react'
 import { FieldText } from '../FieldText'
 import { FormProvider, useForm } from 'react-hook-form'
 import { Box, Button, TextField } from '@mui/material'
-import { ReactHookFormStatePane } from '../../../../organisms/ReactHookFormStatePane'
+// import { ReactHookFormStatePane } from '../../../../organisms/ReactHookFormStatePane'
 import {
   validateIPv4String,
   validateIPv4RangeString,
@@ -13,7 +13,7 @@ import {
   validateIPv4Number,
   validateIPv4Octet,
 } from '../../../../../services'
-import { argTypesTextField } from '../../../../../constants'
+import { argTypesTextField } from './TextField.argTypes'
 
 const sxContainerRoot = {
   display: 'flex',
@@ -171,7 +171,7 @@ export const FieldTextIPv4Components: ComponentStory<typeof TextField> = (args) 
             </Button>
           </form>
         </Box>
-        <ReactHookFormStatePane sx={sxContainerPane} />
+        {/*<ReactHookFormStatePane sx={sxContainerPane} />*/}
       </Box>
     </FormProvider>
   )

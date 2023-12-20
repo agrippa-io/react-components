@@ -1,7 +1,18 @@
 import React, { useCallback } from 'react'
-import { Autocomplete, AutocompleteRenderInputParams, Box, TextField } from '@mui/material'
+import {
+  Autocomplete,
+  AutocompleteRenderInputParams,
+  Box,
+  TextField,
+  AutocompleteFreeSoloValueMapping,
+} from '@mui/material'
 import debounce from 'lodash/debounce'
 import { AutocompleteProps } from '@mui/material/Autocomplete/Autocomplete'
+
+export interface IAutocompleteOption {
+  id: string | number
+  label?: string
+}
 
 export interface IAutocompleteAPIProps<
   T = any,
@@ -45,12 +56,16 @@ export function AutocompleteAPI<
     [onInputChange, debounceInterval, debounceOptions],
   )
 
-  const getOptionLabelFallback = (option: T) => option?.label ?? option
+  const getOptionLabelFallback = (option: T | AutocompleteFreeSoloValueMapping<FreeSolo>): string =>
+    // @ts-expect-error: Optionally Defined
+    option?.label ?? option
 
   const renderOptionFallback = (props: any, option: T) => {
     return (
-      <Box component="li" key={option.id} {...props}>
-        {option.label}
+      // @ts-expect-error: Optionally Defined
+      <Box component="li" key={option?.id} {...props}>
+        {/* @ts-expect-error: Optionally Defined */}
+        {option?.label}
       </Box>
     )
   }

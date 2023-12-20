@@ -1,3 +1,4 @@
+const path = require('path');
 const {
   MainFactory
 } = require('@agrippa-io/storybook-mui-5/dist/factories');
@@ -24,7 +25,15 @@ const storybookMainConfig = MainFactory({
     // '@storybook/addon-toolbars',
     // '@storybook/addon-measure',
     // '@storybook/addon-outline',
-  ]
+  ],
+  webpackFinal: async (config) => {
+    config.resolve.modules = [
+      path.resolve(__dirname, '..', 'src'),
+      path.resolve(__dirname, '..', 'node_modules'),
+    ];
+
+    return config
+  }
 });
 
 console.log('storybookMainConfig', storybookMainConfig)

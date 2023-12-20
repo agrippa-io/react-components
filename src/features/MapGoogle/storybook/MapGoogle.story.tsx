@@ -10,6 +10,9 @@ export default {
   title: 'travel-react / Components / molecules / MapGoogle',
   component: MapGoogle,
   argTypes: MapGoogleArgTypes,
+  args: {
+    apiKey: 'AIzaSyAcSRijbcKe4P5jMm1ze6t8S608Tl53K3o',
+  },
 } as ComponentMeta<typeof MapGoogle>
 
 export const MapGoogleOverview = (args: IMapGoogleProps) => <MapGoogle {...args} />

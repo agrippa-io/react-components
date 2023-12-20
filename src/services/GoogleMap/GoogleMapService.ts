@@ -6,8 +6,7 @@ export interface IGoogleMapServiceProps {
 
 export class GoogleMapService {
   loaderOptions: LoaderOptions
-  google: typeof google
-  api: any
+  google?: typeof google
 
   constructor({ loaderOptions }: IGoogleMapServiceProps) {
     this.loaderOptions = loaderOptions

@@ -5,7 +5,7 @@ import { FormProvider, useForm } from 'react-hook-form'
 import { Box, Button, TextField } from '@mui/material'
 import { ReactHookFormStatePane } from '../../../../organisms/ReactHookFormStatePane'
 import { validateFloat, validateInteger, validateNumber } from '../../../../../services'
-import { argTypesTextField } from '../../../../../constants'
+import { argTypesTextField } from './TextField.argTypes'
 
 const sxContainerRoot = {
   display: 'flex',

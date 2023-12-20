@@ -12,8 +12,11 @@ export default {
   title: 'travel-react / Components / molecules / GooglePlacesAutocomplete',
   component: GooglePlacesAutocomplete,
   argTypes: GooglePlacesAutocompleteArgTypes,
+  args: {
+    apiKey: 'AIzaSyAcSRijbcKe4P5jMm1ze6t8S608Tl53K3o',
+  },
 } as ComponentMeta<typeof GooglePlacesAutocomplete>
 
 export const AutocompleteAPIOverview = (args: IGooglePlacesAutocompleteProps) => (
-  <GooglePlacesAutocomplete apiKey="AIzaSyAcSRijbcKe4P5jMm1ze6t8S608Tl53K3o" {...args} />
+  <GooglePlacesAutocomplete {...args} />
 )

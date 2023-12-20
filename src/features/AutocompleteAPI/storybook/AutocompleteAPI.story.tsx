@@ -10,8 +10,11 @@ export default {
   title: 'travel-react / Components / molecules / AutocompleteAPI',
   component: AutocompleteAPI,
   argTypes: AutocompleteAPIArgTypes,
+  args: {
+    options,
+  },
 } as ComponentMeta<typeof AutocompleteAPI>
 
 export const AutocompleteAPIOverview = (args: IAutocompleteAPIProps) => (
-  <AutocompleteAPI {...args} options={options} />
+  <AutocompleteAPI {...args} />
 )

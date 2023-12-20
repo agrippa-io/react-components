@@ -84,7 +84,7 @@ export function GooglePlacesAutocomplete<
     return option?.place_id === value?.place_id
   }
 
-  const renderOptionFallback = (props, option: T) => {
+  const renderOptionFallback = (props: any, option: T) => {
     return (
       <Box component="li" key={option.id} {...props}>
         {option.description}
