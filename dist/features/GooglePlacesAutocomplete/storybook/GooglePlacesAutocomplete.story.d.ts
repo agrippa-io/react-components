@@ -1,6 +1,7 @@
+/// <reference types="google.maps" />
+/// <reference types="googlemaps" />
 import React from 'react';
-import { ComponentMeta } from '@storybook/react';
-import { GooglePlacesAutocomplete, IGooglePlacesAutocompleteProps } from '../GooglePlacesAutocomplete.component';
-declare const _default: ComponentMeta<typeof GooglePlacesAutocomplete>;
+import { IGooglePlacesAutocompleteProps } from '../GooglePlacesAutocomplete.component';
+declare const _default: import("@storybook/types").ComponentAnnotations<import("@storybook/react/dist/types-0fc72a6d").R, IGooglePlacesAutocompleteProps<google.maps.places.AutocompletePrediction, boolean | undefined, boolean | undefined, boolean | undefined>>;
 export default _default;
 export declare const AutocompleteAPIOverview: (args: IGooglePlacesAutocompleteProps) => React.JSX.Element;

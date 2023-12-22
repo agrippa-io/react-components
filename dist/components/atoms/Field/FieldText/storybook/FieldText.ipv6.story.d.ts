@@ -1,5 +1,5 @@
-import { ComponentStory, ComponentMeta } from '@storybook/react';
+import { ComponentStory } from '@storybook/react';
 import { TextField } from '@mui/material';
-declare const _default: ComponentMeta<({ name, control, defaultValue, shouldUnregister, rules, textFieldProps, }: import("../FieldText").IFieldTextProps) => import("react").JSX.Element>;
+declare const _default: import("@storybook/types").ComponentAnnotations<import("@storybook/react/dist/types-0fc72a6d").R, import("../FieldText").IFieldTextProps>;
 export default _default;
 export declare const FieldTextIPv6Components: ComponentStory<typeof TextField>;

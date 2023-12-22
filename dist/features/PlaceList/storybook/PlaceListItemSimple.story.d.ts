@@ -1,7 +1,6 @@
 import React from 'react';
-import { ComponentMeta } from '@storybook/react';
-import { PlaceList, IPlaceListProps } from '../PlaceList.component';
-declare const _default: ComponentMeta<typeof PlaceList>;
+import { IPlaceListProps } from '../PlaceList.component';
+declare const _default: import("@storybook/types").ComponentAnnotations<import("@storybook/react/dist/types-0fc72a6d").R, IPlaceListProps>;
 export default _default;
 export declare const PlaceListSimple: {
     (args: IPlaceListProps): React.JSX.Element;
