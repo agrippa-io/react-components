@@ -1,11 +1,11 @@
 {
   "name": "@agrippa-io/react-components",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "type": "module",
   "files": [
     "/dist"
   ],
-  "main": "dist/index.cjs.js",
+  "main": "dist/index.es.js",
   "module": "dist/index.es.js",
   "types": "dist/index.d.ts",
   "exports": {
