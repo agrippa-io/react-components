@@ -1,10 +1,9 @@
-const path = require('path');
-const {
+import path from 'path'
+import {
   MainFactory
-} = require('@agrippa-io/storybook-mui-5/dist/factories');
+} from '@agrippa-io/storybook-mui-5/dist/factories'
 
-const storybookMainConfig = MainFactory({
-  framework: "@storybook/react",
+export const storybookMainConfig = MainFactory({
   core: {
     "builder": "webpack5",
   },
@@ -38,4 +37,21 @@ const storybookMainConfig = MainFactory({
 
 console.log('storybookMainConfig', storybookMainConfig)
 
-module.exports = storybookMainConfig;
+export const framework = {
+  name: '@storybook/react-webpack5',
+  options: {}
+};
+
+export const docs = {
+  autodocs: true
+};
+
+export const typescript = {
+  reactDocgen: 'react-docgen-typescript'
+};
+
+export const stories = storybookMainConfig.stories
+export const addons = storybookMainConfig.addons
+export const features = {
+  legacyMdx1: true, // 👈 Enables MDX v1 support
+}

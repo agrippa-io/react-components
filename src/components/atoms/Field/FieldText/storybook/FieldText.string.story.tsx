@@ -20,6 +20,12 @@ const sxContainerPane = {
   margin: '0 5px',
 }
 
+const sxRow = {
+  display: 'flex',
+  direction: 'row',
+  width: '100%',
+}
+
 export default {
   title: 'Components / atoms / Field / FieldText / String',
   component: FieldText,
@@ -36,96 +42,108 @@ export const FieldTextStringComponent: ComponentStory<typeof TextField> = (args)
     <FormProvider {...formProviderProps}>
       <Box sx={sxContainerRoot}>
         <Box sx={sxContainerPane}>
-          <form onSubmit={formProviderProps.handleSubmit(onSubmit)}>
-            <FieldText
-              name="fieldChar"
-              textFieldProps={{
-                label: 'String',
-                helperText: 'Enter a string',
-                ...args,
-                inputProps: {
-                  placeholder: 'Enter a string',
-                  ...args.inputProps,
-                },
-              }}
-            />
+          <form style={{ width: '100%' }} onSubmit={formProviderProps.handleSubmit(onSubmit)}>
+            <Box sx={sxRow}>
+              <FieldText
+                name="fieldChar"
+                textFieldProps={{
+                  label: 'String',
+                  helperText: 'Enter a string',
+                  ...args,
+                  inputProps: {
+                    placeholder: 'Enter a string',
+                    ...args.inputProps,
+                  },
+                }}
+              />
+            </Box>
 
-            <FieldText
-              name="fieldMinChar"
-              rules={{
-                validate: validateMinChar({ min: 5 }),
-              }}
-              textFieldProps={{
-                label: 'Min Characters',
-                helperText: 'Enter a string with 5 or more characters',
-                ...args,
-                inputProps: {
-                  placeholder: 'Enter a string with 5 or more characters',
-                  ...args.inputProps,
-                },
-              }}
-            />
+            <Box sx={sxRow}>
+              <FieldText
+                name="fieldMinChar"
+                rules={{
+                  validate: validateMinChar({ min: 5 }),
+                }}
+                textFieldProps={{
+                  label: 'Min Characters',
+                  helperText: 'Enter a string with 5 or more characters',
+                  ...args,
+                  inputProps: {
+                    placeholder: 'Enter a string with 5 or more characters',
+                    ...args.inputProps,
+                  },
+                }}
+              />
+            </Box>
 
-            <FieldText
-              name="fieldMax"
-              rules={{
-                validate: validateMaxChar({ max: 10 }),
-              }}
-              textFieldProps={{
-                label: 'Max Characters',
-                helperText: 'Enter a string with 10 or fewer characters',
-                ...args,
-                inputProps: {
-                  placeholder: 'Enter a string with 10 or fewer characters',
-                  ...args.inputProps,
-                },
-              }}
-            />
+            <Box sx={sxRow}>
+              <FieldText
+                name="fieldMax"
+                rules={{
+                  validate: validateMaxChar({ max: 10 }),
+                }}
+                textFieldProps={{
+                  label: 'Max Characters',
+                  helperText: 'Enter a string with 10 or fewer characters',
+                  ...args,
+                  inputProps: {
+                    placeholder: 'Enter a string with 10 or fewer characters',
+                    ...args.inputProps,
+                  },
+                }}
+              />
+            </Box>
 
-            <FieldText
-              name="fieldRangeChar"
-              rules={{
-                validate: validateRangeChar({ min: 5, max: 10 }),
-              }}
-              textFieldProps={{
-                label: 'Character Range',
-                helperText: 'Enter a string between 5 and 10 characters',
-                ...args,
-                inputProps: {
-                  placeholder: 'Enter a string between 5 and 10 characters',
-                  ...args.inputProps,
-                },
-              }}
-            />
+            <Box sx={sxRow}>
+              <FieldText
+                name="fieldRangeChar"
+                rules={{
+                  validate: validateRangeChar({ min: 5, max: 10 }),
+                }}
+                textFieldProps={{
+                  label: 'Character Range',
+                  helperText: 'Enter a string between 5 and 10 characters',
+                  ...args,
+                  inputProps: {
+                    placeholder: 'Enter a string between 5 and 10 characters',
+                    ...args.inputProps,
+                  },
+                }}
+              />
+            </Box>
 
-            <FieldText
-              name="fieldTextarea"
-              rules={{
-                validate: validateRangeChar({ min: 5, max: 250 }),
-              }}
-              textFieldProps={{
-                label: 'Textarea for large bodies of text',
-                helperText: 'Insert large text block',
-                multiline: true,
-                rows: 5,
-                ...args,
-                inputProps: {
-                  placeholder: 'Insert large text block',
-                  ...args.inputProps,
-                },
-              }}
-            />
+            <Box sx={sxRow}>
+              <FieldText
+                name="fieldTextarea"
+                rules={{
+                  validate: validateRangeChar({ min: 5, max: 250 }),
+                }}
+                textFieldProps={{
+                  label: 'Textarea for large bodies of text',
+                  helperText: 'Insert large text block',
+                  multiline: true,
+                  rows: 5,
+                  ...args,
+                  inputProps: {
+                    placeholder: 'Insert large text block',
+                    ...args.inputProps,
+                  },
+                }}
+              />
+            </Box>
 
-            <Button
-              type="submit"
-              variant="outlined"
-              sx={{
-                marginTop: '10px',
-              }}
-              fullWidth
-            >
-              Submit
-            </Button>
+            <Box sx={sxRow}>
+              <Button
+                type="submit"
+                variant="outlined"
+                sx={{
+                  marginTop: '10px',
+                }}
+                fullWidth
+              >
+                Submit
+              </Button>
+            </Box>
           </form>
         </Box>
         <ReactHookFormStatePane sx={sxContainerPane} />

@@ -21,6 +21,9 @@
 # development
 /needsWork
 
+# Storybook
+migration-storybook.log
+
 # misc
 .DS_Store
 .env.local
