@@ -35,8 +35,6 @@ export const storybookMainConfig = MainFactory({
   }
 });
 
-console.log('storybookMainConfig', storybookMainConfig)
-
 export const framework = {
   name: '@storybook/react-webpack5',
   options: {}
