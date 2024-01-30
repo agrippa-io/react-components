@@ -1,2 +1,2 @@
-export * from './PlaceListItemDetailed';
-export * from './PlaceListItemSimple';
+export * from './PlaceListItemDetailed'
+export * from './PlaceListItemSimple'

@@ -1,1 +1,1 @@
-export * from './EmailSignupWelcome';
+export * from './EmailSignupWelcome'

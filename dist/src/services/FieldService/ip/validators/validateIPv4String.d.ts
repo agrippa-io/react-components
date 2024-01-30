@@ -1,1 +1,1 @@
-export declare function validateIPv4String(value: string): string | boolean | undefined;
+export declare function validateIPv4String(value: string): string | boolean | undefined

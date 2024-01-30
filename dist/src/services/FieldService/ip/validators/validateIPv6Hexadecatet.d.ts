@@ -1,1 +1,1 @@
-export declare function validateIPv6Hexadecatet(value: string): string | boolean | undefined;
+export declare function validateIPv6Hexadecatet(value: string): string | boolean | undefined

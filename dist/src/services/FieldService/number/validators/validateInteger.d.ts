@@ -1,6 +1,8 @@
 export interface IValidateIntegerProps {
-    message?: string;
+  message?: string
 }
-export declare function validateInteger({ message }: {
-    message?: string | undefined;
-}): (value: any) => string | true;
+export declare function validateInteger({
+  message,
+}: {
+  message?: string | undefined
+}): (value: any) => string | true

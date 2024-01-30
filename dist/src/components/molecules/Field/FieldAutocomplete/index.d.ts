@@ -1,1 +1,1 @@
-export * from './FieldAutocomplete';
+export * from './FieldAutocomplete'

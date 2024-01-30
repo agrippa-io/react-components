@@ -1,1 +1,1 @@
-export * from './ERegexNumber';
+export * from './ERegexNumber'

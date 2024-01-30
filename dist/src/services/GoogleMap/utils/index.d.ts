@@ -1,1 +1,1 @@
-export * from './predictionToPlace';
+export * from './predictionToPlace'

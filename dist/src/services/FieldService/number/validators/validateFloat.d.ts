@@ -1,4 +1,6 @@
 export interface IValidateFloatProps {
-    message?: string;
+  message?: string
 }
-export declare function validateFloat({ message }: IValidateFloatProps): (value: any) => string | true;
+export declare function validateFloat({
+  message,
+}: IValidateFloatProps): (value: any) => string | true

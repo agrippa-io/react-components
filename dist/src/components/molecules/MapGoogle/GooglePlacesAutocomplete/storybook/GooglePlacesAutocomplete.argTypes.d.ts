@@ -1,1 +1,1 @@
-export declare const GooglePlacesAutocompleteArgTypes: {};
+export declare const GooglePlacesAutocompleteArgTypes: {}

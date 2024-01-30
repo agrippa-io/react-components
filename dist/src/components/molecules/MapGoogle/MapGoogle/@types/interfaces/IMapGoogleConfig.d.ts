@@ -1,3 +1,3 @@
 export interface IMapGoogleConfig {
-    apiKey: string;
+  apiKey: string
 }

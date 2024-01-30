@@ -1,4 +1,4 @@
 export declare const options: {
-    id: number;
-    label: string;
-}[];
+  id: number
+  label: string
+}[]

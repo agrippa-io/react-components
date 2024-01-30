@@ -1,1 +1,1 @@
-export * from './FieldText';
+export * from './FieldText'

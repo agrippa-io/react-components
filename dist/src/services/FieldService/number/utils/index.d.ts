@@ -1,3 +1,3 @@
-export * from './isInteger';
-export * from './isFloat';
-export * from './isNumber';
+export * from './isInteger'
+export * from './isFloat'
+export * from './isNumber'

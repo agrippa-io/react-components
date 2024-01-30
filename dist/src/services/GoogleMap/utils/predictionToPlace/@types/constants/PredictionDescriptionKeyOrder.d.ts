@@ -1,1 +1,1 @@
-export declare const PredictionDescriptionKeyOrder: Record<string, string[]>;
+export declare const PredictionDescriptionKeyOrder: Record<string, string[]>

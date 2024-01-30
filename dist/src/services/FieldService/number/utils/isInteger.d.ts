@@ -1,1 +1,1 @@
-export declare function isInteger(str: string): boolean;
+export declare function isInteger(str: string): boolean

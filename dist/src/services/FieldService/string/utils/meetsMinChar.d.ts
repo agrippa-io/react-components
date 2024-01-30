@@ -1,1 +1,1 @@
-export declare function meetsMinChar(str: string, min: number): boolean;
+export declare function meetsMinChar(str: string, min: number): boolean

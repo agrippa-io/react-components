@@ -1,3 +1,3 @@
-export * from './meetsMaxChar';
-export * from './meetsMinChar';
-export * from './isWithinRangeChar';
+export * from './meetsMaxChar'
+export * from './meetsMinChar'
+export * from './isWithinRangeChar'
