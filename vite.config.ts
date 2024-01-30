@@ -1,5 +1,7 @@
 import { defineConfig } from 'vite'
 import dts from 'vite-plugin-dts'
+import react from '@vitejs/plugin-react'
+import svgr from 'vite-plugin-svgr'
 // import { peerDependencies } from "./package.json";
 
 export default defineConfig({
@@ -16,14 +18,18 @@ export default defineConfig({
     sourcemap: true, // Generates source maps for debugging.
     emptyOutDir: true, // Clears the output directory before building.
   },
-  plugins: [dts()], // Uses the 'vite-plugin-dts' plugin for generating TypeScript declaration files (d.ts).
+  plugins: [
+    svgr({
+      svgrOptions: { exportType: 'named', ref: true, svgo: false, titleProp: true },
+      include: '**/*.svg',
+    }),
+    react(),
+    dts(),
+  ], // Uses the 'vite-plugin-dts' plugin for generating TypeScript declaration files (d.ts).
   test: {
     globals: true,
     environment: 'jsdom',
     setupFiles: './setupTests.ts',
-    exclude: [
-      'node_modules',
-      'storybook-static',
-    ]
+    exclude: ['node_modules', 'storybook-static'],
   },
 })

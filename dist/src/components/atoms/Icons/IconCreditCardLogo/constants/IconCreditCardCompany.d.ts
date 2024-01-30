@@ -1,0 +1,21 @@
+export declare enum IconCreditCardCompany {
+    ALIPAY = "alipay",
+    AMEX = "amex",
+    AMERICAN_EXPRESS = "american-express",
+    CODE = "code",
+    CODE_FRONT = "code-front",
+    DINERS = "diners",
+    DINERS_CLUB = "diners-club",
+    DISCOVER = "discover",
+    ELO = "elo",
+    GENERIC = "generic",
+    HIPER = "hiper",
+    HIPERCARD = "hipercard",
+    JCB = "jcb",
+    MAESTRO = "maestro",
+    MASTERCARD = "mastercard",
+    MIR = "mir",
+    PAYPAL = "paypal",
+    UNIONPAY = "unionpay",
+    VISA = "visa"
+}

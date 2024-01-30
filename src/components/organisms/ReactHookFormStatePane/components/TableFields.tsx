@@ -1,3 +1,5 @@
+import React from 'react'
+
 import isEmpty from 'lodash'
 import { Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material'
 

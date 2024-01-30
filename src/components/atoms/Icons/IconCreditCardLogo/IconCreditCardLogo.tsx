@@ -1,10 +1,38 @@
+import React from 'react'
 import { IconCreditCardStyle, IconCreditCardCompany, IconCreditCardStyleMap } from './constants'
 
-export interface IconCreditCardLogoProps {
+export interface IIconCreditCardLogoProps {
   height?: number | string
   width?: number | string
-  iconStyle: IconCreditCardStyle
-  company: IconCreditCardCompany
+  iconStyle:
+    | IconCreditCardStyle
+    | 'flat'
+    | 'flat-rounded'
+    | 'logo'
+    | 'logo-border'
+    | 'mono'
+    | 'mono-outline'
+  company:
+    | IconCreditCardCompany
+    | 'alipay'
+    | 'amex'
+    | 'american-express'
+    | 'code'
+    | 'code-front'
+    | 'diners'
+    | 'diners-club'
+    | 'discover'
+    | 'elo'
+    | 'generic'
+    | 'hiper'
+    | 'hipercard'
+    | 'jcb'
+    | 'maestro'
+    | 'mastercard'
+    | 'mir'
+    | 'paypal'
+    | 'unionpay'
+    | 'visa'
 }
 
 export function IconCreditCardLogo({
@@ -12,7 +40,7 @@ export function IconCreditCardLogo({
   width = 70,
   iconStyle,
   company,
-}: IconCreditCardLogoProps) {
+}: IIconCreditCardLogoProps) {
   const Component = IconCreditCardStyleMap[iconStyle][company]
   if (!Component) {
     return null
