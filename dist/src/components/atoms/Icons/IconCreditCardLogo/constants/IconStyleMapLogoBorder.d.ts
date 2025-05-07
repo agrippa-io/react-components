@@ -1,2 +1,2 @@
-import { IconCreditCardCompany } from './IconCreditCardCompany'
-export declare const IconCreditCardLogoStyleMapLogoBorder: Record<IconCreditCardCompany, any>
+import { IconCreditCardCompany } from './IconCreditCardCompany';
+export declare const IconCreditCardLogoStyleMapLogoBorder: Record<IconCreditCardCompany, any>;

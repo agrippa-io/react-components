@@ -1,1 +1,1 @@
-export * from './IconCreditCardLogo'
+export * from './IconCreditCardLogo';

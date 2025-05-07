@@ -1,3 +1,3 @@
-export * from './validateMaxChar'
-export * from './validateMinChar'
-export * from './validateRangeChar'
+export * from './validateMaxChar';
+export * from './validateMinChar';
+export * from './validateRangeChar';

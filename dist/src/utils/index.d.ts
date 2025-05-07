@@ -1,1 +1,1 @@
-export * from './renderReactEmail'
+export * from './renderReactEmail';

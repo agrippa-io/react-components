@@ -1,1 +1,1 @@
-export declare function meetsMaxChar(str: string, max: number): boolean
+export declare function meetsMaxChar(str: string, max: number): boolean;

@@ -1,6 +1,6 @@
-import { MouseEventHandler } from 'react'
+import { MouseEventHandler } from 'react';
 export interface IElementType {
-  key?: string
-  className?: string
-  onClick?: MouseEventHandler
+    key?: string;
+    className?: string;
+    onClick?: MouseEventHandler;
 }

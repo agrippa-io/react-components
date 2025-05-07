@@ -1,1 +1,1 @@
-export declare function isFloat(str: string): boolean
+export declare function isFloat(str: string): boolean;

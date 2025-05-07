@@ -1,1 +1,1 @@
-export * from './IElementType'
+export * from './IElementType';

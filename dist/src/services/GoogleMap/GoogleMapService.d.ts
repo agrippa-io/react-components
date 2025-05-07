@@ -24,13 +24,13 @@
 /// <reference types="googlemaps" />
 /// <reference types="googlemaps" />
 /// <reference types="googlemaps" />
-import { LoaderOptions } from '@googlemaps/js-api-loader'
+import { LoaderOptions } from '@googlemaps/js-api-loader';
 export interface IGoogleMapServiceProps {
-  loaderOptions: LoaderOptions
+    loaderOptions: LoaderOptions;
 }
 export declare class GoogleMapService {
-  loaderOptions: LoaderOptions
-  google?: typeof google
-  constructor({ loaderOptions }: IGoogleMapServiceProps)
-  init(): Promise<void>
+    loaderOptions: LoaderOptions;
+    google?: typeof google;
+    constructor({ loaderOptions }: IGoogleMapServiceProps);
+    init(): Promise<void>;
 }

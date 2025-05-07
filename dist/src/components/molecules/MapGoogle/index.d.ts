@@ -1,3 +1,3 @@
-export * from './PlaceList'
-export * from './MapGoogle'
-export * from './GooglePlacesAutocomplete'
+export * from './PlaceList';
+export * from './MapGoogle';
+export * from './GooglePlacesAutocomplete';

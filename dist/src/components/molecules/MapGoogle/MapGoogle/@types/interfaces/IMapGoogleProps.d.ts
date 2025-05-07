@@ -1,5 +1,5 @@
-import { IMapGoogleConfig } from './IMapGoogleConfig'
+import { IMapGoogleConfig } from './IMapGoogleConfig';
 export interface IMapGoogleProps {
-  config: IMapGoogleConfig
-  debug: boolean
+    config: IMapGoogleConfig;
+    debug: boolean;
 }

@@ -1,1 +1,1 @@
-export declare const FieldAutocompleteArgTypes: {}
+export declare const FieldAutocompleteArgTypes: {};

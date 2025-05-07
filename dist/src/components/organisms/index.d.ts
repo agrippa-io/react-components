@@ -1,1 +1,1 @@
-export * from './ReactHookFormStatePane'
+export * from './ReactHookFormStatePane';

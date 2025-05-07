@@ -2,6 +2,6 @@
     "*.{ts,tsx}": [
         "yarn format",
         "yarn lint",
-        "./node_modules/.bin/vitest related --run"
+        "./node_modules/.bin/jest",
     ]
 }

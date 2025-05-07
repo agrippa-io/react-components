@@ -1,1 +1,1 @@
-export * from './Predictions'
+export * from './Predictions';

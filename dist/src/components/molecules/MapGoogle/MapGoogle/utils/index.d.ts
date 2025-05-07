@@ -1,1 +1,1 @@
-export * from './mapGoogleConfigToDataGridRows'
+export * from './mapGoogleConfigToDataGridRows';

@@ -1,6 +1,4 @@
 export interface IValidateNumberProps {
-  message?: string
+    message?: string;
 }
-export declare function validateNumber({
-  message,
-}: IValidateNumberProps): (value: any) => string | true
+export declare function validateNumber({ message }: IValidateNumberProps): (value: any) => string | true;
