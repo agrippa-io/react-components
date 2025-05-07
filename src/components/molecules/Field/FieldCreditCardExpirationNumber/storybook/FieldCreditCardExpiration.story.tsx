@@ -27,10 +27,17 @@ const sxRow = {
   width: '100%',
 }
 
+const argTypesField = {
+  ...argTypesTextField,
+}
+if (argTypesField.onChange) {
+  delete argTypesField.onChange
+}
+
 export default {
   title: 'Components / molecules / Field / FieldCreditCard / FieldCreditCardExpiration',
   component: FieldCreditCardExpiration,
-  argTypes: argTypesTextField,
+  argTypes: argTypesField,
 } as ComponentMeta<typeof FieldCreditCardExpiration>
 
 export const FieldCreditCardExpirationStory: ComponentStory<typeof FieldCreditCardExpiration> = (
@@ -41,6 +48,10 @@ export const FieldCreditCardExpirationStory: ComponentStory<typeof FieldCreditCa
   })
   const onSubmit = (data: any) => console.log('Form Data', data)
 
+  // if (args.onChange) {
+  //   delete args.onChange
+  // }
+
   return (
     <FormProvider {...formProviderProps}>
       <Box sx={sxContainerRoot}>
@@ -50,14 +61,8 @@ export const FieldCreditCardExpirationStory: ComponentStory<typeof FieldCreditCa
               <FieldCreditCardExpiration
                 name="credit-card-expiration"
                 textFieldProps={{
-                  label: 'Expiration',
                   helperText: 'Expiration',
                   ...args,
-                  inputProps: {
-                    placeholder: 'MM/YY',
-                    // @ts-expect-error Need to figure out how to type this
-                    ...args.inputProps,
-                  },
                 }}
               />
             </Box>
