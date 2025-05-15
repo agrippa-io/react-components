@@ -3,7 +3,7 @@ import React from 'react'
 import { Box, TextFieldProps, TextField } from '@mui/material'
 import { Controller, ControllerProps } from 'react-hook-form'
 import InputMask from 'react-input-mask'
-import { REGEX_CREDIT_CARD_EXPIRATION_DATE } from '../../../../constants'
+import { validateIsExpirationDate, validateIsExpirationDateCurrent } from '../../../../services'
 
 export interface IFieldCreditCardExpirationProps extends Omit<ControllerProps, 'render'> {
   textFieldProps?: Omit<TextFieldProps, 'onChange' | 'onBlur' | 'onFocus'>
@@ -18,30 +18,8 @@ export const FieldCreditCardExpiration = ({
   rules = {
     required: 'Expiration is required',
     validate: {
-      isExpirationDate: (v) =>
-        v === '__/__' ||
-        v === 'MM/YY' ||
-        REGEX_CREDIT_CARD_EXPIRATION_DATE.test(v) ||
-        'Invalid expiration date format',
-      isExpired: (v) => {
-        let isExpirationCurrent = true
-        const isPlaceholder = v === '__/__' || v === 'MM/YY'
-        if (!isPlaceholder && v?.length === 5) {
-          const today = new Date()
-          const currentYear = parseInt(today.getFullYear().toString().slice(-2))
-          const suppliedYear = parseInt(v.slice(-2))
-          const isSuppliedYearMatchCurrentYear = suppliedYear == currentYear
-          if (isSuppliedYearMatchCurrentYear) {
-            const currenMonth = today.getMonth()
-            const suppliedMonth = parseInt(v.substring(0, 2)) - 1
-            isExpirationCurrent = suppliedMonth > currenMonth
-          } else {
-            isExpirationCurrent = suppliedYear >= currentYear
-          }
-        }
-
-        return isExpirationCurrent || 'Expired'
-      },
+      validateIsExpirationDate,
+      validateIsExpirationDateCurrent,
     },
   },
   textFieldProps,
