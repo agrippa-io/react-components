@@ -2,6 +2,6 @@
     "*.{ts,tsx}": [
         "yarn format",
         "yarn lint",
-        "./node_modules/.bin/jest",
+        "./node_modules/.bin/jest --passWithNoTests",
     ]
 }
