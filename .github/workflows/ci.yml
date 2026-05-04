@@ -26,6 +26,8 @@ jobs:
           scope: '@agrippa-io'
 
       - name: Install
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: yarn install --frozen-lockfile
 
       - name: Format check
@@ -67,6 +69,8 @@ jobs:
           scope: '@agrippa-io'
 
       - name: Install
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: yarn install --frozen-lockfile
 
       - name: Compute canary version
