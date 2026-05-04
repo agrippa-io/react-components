@@ -2,6 +2,10 @@
 
 This project is a React Component library that extends React Material UI.
 
+> **Releases & CI/CD:** see [RELEASE.md](./RELEASE.md) for the branch model
+> (gitflow), GitHub Actions workflows, npm dist-tag strategy, and operator
+> runbook for cutting a release.
+
 ### Technologies
 #### React
  - [React](https://react.dev/)
@@ -13,6 +17,9 @@ This project is a React Component library that extends React Material UI.
 #### Testing
  - [Jest](https://jestjs.io/)
  - [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/)
+#### Release
+ - For details on how this package is built, validated, and published to npm,
+   see [RELEASE.md](./RELEASE.md).
 
 ### Project Architecture
 All implementation files should be stored in the `src` directory, which is 

@@ -1,0 +1,17 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Auto-fix formatting and lint issues before pushing.
+# If the working tree ends up dirty, abort so the user can stage and commit.
+
+yarn format
+yarn lint
+
+if ! git diff --quiet; then
+  echo ""
+  echo "✋ pre-push: formatting/lint fixes modified your working tree."
+  echo "    Stage and commit the changes below, then push again."
+  echo ""
+  git status --short
+  exit 1
+fi

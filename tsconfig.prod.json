@@ -28,6 +28,11 @@
   ], // Specifies the directory to include when searching for TypeScript files.
   "exclude": [
     "node_modules",
+    "**/*.story.tsx",
+    "**/*.stories.tsx",
+    "**/storybook/**",
+    "**/*.test.ts",
+    "**/*.test.tsx"
   ],
   "paths": {
     "src/*": [
