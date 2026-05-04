@@ -59,15 +59,28 @@ jobs:
       - name: Install
         run: yarn install --frozen-lockfile
 
+      - name: Resolve PR number
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+            })
+            core.setOutput('number', data[0]?.number ?? 0)
+            core.setOutput('sha', (data[0]?.merge_commit_sha ?? context.sha).slice(0, 7))
+
       - name: Compute prerelease version
         run: |
           BASE=$(node -p "require('./package.json').version")
-          npm version "${BASE}-dev.${{ github.run_number }}" --no-git-tag-version --allow-same-version
+          npm version "${BASE}-dev.${{ steps.pr.outputs.number }}.${{ steps.pr.outputs.sha }}" --no-git-tag-version --allow-same-version
 
       - name: Build
         run: yarn build
 
-      - name: Publish (dist-tag: dev)
+      - name: 'Publish (dist-tag: dev)'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --tag dev --access public
@@ -99,7 +112,7 @@ jobs:
       - name: Build
         run: yarn build
 
-      - name: Publish (dist-tag: staging)
+      - name: 'Publish (dist-tag: staging)'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --tag staging --access public
@@ -154,7 +167,7 @@ jobs:
       - name: Build
         run: yarn build
 
-      - name: Publish (dist-tag: latest)
+      - name: 'Publish (dist-tag: latest)'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --access public
