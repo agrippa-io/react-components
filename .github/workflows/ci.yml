@@ -81,7 +81,7 @@ jobs:
       - name: Build
         run: yarn build
 
-      - name: Publish to npm (dist-tag: canary)
+      - name: 'Publish to npm (dist-tag: canary)'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --tag canary --access public
