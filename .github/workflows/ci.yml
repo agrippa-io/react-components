@@ -1,0 +1,108 @@
+name: ci
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - 'release/**'
+      - main
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Format / Lint / Test / Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'yarn'
+          registry-url: 'https://registry.npmjs.org'
+          scope: '@agrippa-io'
+
+      - name: Install
+        run: yarn install --frozen-lockfile
+
+      - name: Format check
+        run: yarn prettier --check 'src/**/*.{ts,tsx}'
+
+      - name: Lint
+        run: yarn eslint . --ext .ts,.tsx --max-warnings=0
+
+      - name: Test
+        run: yarn vitest run --coverage
+
+      - name: Build
+        run: yarn build
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ github.event.pull_request.head.sha }}
+          path: dist/
+          retention-days: 7
+
+  publish-canary:
+    name: Publish canary to npm
+    needs: validate
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'yarn'
+          registry-url: 'https://registry.npmjs.org'
+          scope: '@agrippa-io'
+
+      - name: Install
+        run: yarn install --frozen-lockfile
+
+      - name: Compute canary version
+        id: version
+        run: |
+          BASE=$(node -p "require('./package.json').version")
+          SHORT_SHA=$(git rev-parse --short=7 HEAD)
+          CANARY="${BASE}-canary.${SHORT_SHA}"
+          echo "version=${CANARY}" >> "$GITHUB_OUTPUT"
+          npm version "${CANARY}" --no-git-tag-version --allow-same-version
+
+      - name: Build
+        run: yarn build
+
+      - name: Publish to npm (dist-tag: canary)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --tag canary --access public
+
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = '${{ steps.version.outputs.version }}'
+            const body = [
+              '📦 Canary published to npm',
+              '',
+              '```bash',
+              `yarn add @agrippa-io/react-components@${version}`,
+              '# or',
+              `npm install @agrippa-io/react-components@canary`,
+              '```'
+            ].join('\n')
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body,
+            })

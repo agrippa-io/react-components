@@ -1,0 +1,175 @@
+name: release
+
+on:
+  push:
+    branches:
+      - develop
+      - 'release/**'
+      - main
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Format / Lint / Test / Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'yarn'
+          registry-url: 'https://registry.npmjs.org'
+          scope: '@agrippa-io'
+
+      - name: Install
+        run: yarn install --frozen-lockfile
+
+      - name: Format check
+        run: yarn prettier --check 'src/**/*.{ts,tsx}'
+
+      - name: Lint
+        run: yarn eslint . --ext .ts,.tsx --max-warnings=0
+
+      - name: Test
+        run: yarn vitest run --coverage
+
+      - name: Build
+        run: yarn build
+
+  publish-dev:
+    name: Publish to npm (dev)
+    if: github.ref == 'refs/heads/develop'
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'yarn'
+          registry-url: 'https://registry.npmjs.org'
+          scope: '@agrippa-io'
+
+      - name: Install
+        run: yarn install --frozen-lockfile
+
+      - name: Compute prerelease version
+        run: |
+          BASE=$(node -p "require('./package.json').version")
+          npm version "${BASE}-dev.${{ github.run_number }}" --no-git-tag-version --allow-same-version
+
+      - name: Build
+        run: yarn build
+
+      - name: Publish (dist-tag: dev)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --tag dev --access public
+
+  publish-staging:
+    name: Publish to npm (staging)
+    if: startsWith(github.ref, 'refs/heads/release/')
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'yarn'
+          registry-url: 'https://registry.npmjs.org'
+          scope: '@agrippa-io'
+
+      - name: Install
+        run: yarn install --frozen-lockfile
+
+      - name: Compute RC version
+        run: |
+          BASE=$(node -p "require('./package.json').version")
+          npm version "${BASE}-rc.${{ github.run_number }}" --no-git-tag-version --allow-same-version
+
+      - name: Build
+        run: yarn build
+
+      - name: Publish (dist-tag: staging)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --tag staging --access public
+
+  publish-prod:
+    name: Publish to npm (latest)
+    if: github.ref == 'refs/heads/main'
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: prod
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'yarn'
+          registry-url: 'https://registry.npmjs.org'
+          scope: '@agrippa-io'
+
+      - name: Install
+        run: yarn install --frozen-lockfile
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Determine bump from conventional commit
+        id: bump
+        run: |
+          MSG=$(git log -1 --pretty=%B)
+          if echo "$MSG" | grep -qE "BREAKING CHANGE|^[a-z]+(\([^)]+\))?!:"; then
+            echo "bump=major" >> "$GITHUB_OUTPUT"
+          elif echo "$MSG" | grep -qE "^feat(\([^)]+\))?:"; then
+            echo "bump=minor" >> "$GITHUB_OUTPUT"
+          else
+            echo "bump=patch" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Bump version + tag
+        id: version
+        run: |
+          NEW=$(npm version ${{ steps.bump.outputs.bump }} -m "chore(release): %s [skip ci]")
+          echo "version=${NEW}" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        run: yarn build
+
+      - name: Publish (dist-tag: latest)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
+
+      - name: Push commit + tag
+        run: git push --follow-tags origin main
+
+      - name: Create GitHub release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: '${{ steps.version.outputs.version }}',
+              name: '${{ steps.version.outputs.version }}',
+              generate_release_notes: true,
+            })
