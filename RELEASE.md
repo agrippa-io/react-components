@@ -48,11 +48,17 @@ Triggered on `pull_request` targeting `develop`, `release/**`, or `main`.
 Triggered on `push` to `develop`, `release/**`, or `main`. Each push runs the
 same `validate` job as CI before any publish job runs.
 
-| Trigger              | Job              | Version                       | dist-tag  | Environment |
-| -------------------- | ---------------- | ----------------------------- | --------- | ----------- |
-| push to `develop`    | `publish-dev`    | `x.y.z-dev.<run_number>`      | `dev`     | `dev`       |
-| push to `release/**` | `publish-staging`| `x.y.z-rc.<run_number>`       | `staging` | `staging`   |
-| push to `main`       | `publish-prod`   | `x.y.(z+1)` (or minor / major)| `latest`  | `prod`      |
+| Trigger              | Job              | Version                                | dist-tag  | Environment |
+| -------------------- | ---------------- | -------------------------------------- | --------- | ----------- |
+| push to `develop`    | `publish-dev`    | `x.y.z-dev.<pr-number>.<short-sha>`    | `dev`     | `dev`       |
+| push to `release/**` | `publish-staging`| `x.y.z-rc.<run_number>`                | `staging` | `staging`   |
+| push to `main`       | `publish-prod`   | `x.y.(z+1)` (or minor / major)         | `latest`  | `prod`      |
+
+The `publish-dev` job resolves the PR number and merge-commit short SHA from the
+GitHub API (`repos.listPullRequestsAssociatedWithCommit`) so each dev prerelease
+is traceable back to the PR and exact commit it came from. If a push lands on
+`develop` without an associated PR (direct push), the PR number falls back to
+`0` and the SHA falls back to `github.sha`.
 
 The `publish-prod` job:
 
@@ -70,7 +76,9 @@ The `publish-prod` job:
 ## Local hooks (`husky`)
 
 - **`.husky/pre-commit`** — runs `lint-staged` against staged `.ts/.tsx` files
-  (`yarn format`, `yarn lint`, `jest --passWithNoTests`).
+  (`yarn format`, `yarn lint`, `vitest related --run --passWithNoTests`).
+  `vitest related` only re-runs tests whose dependency graph touches the staged
+  files, so the hook stays fast even as the suite grows.
 - **`.husky/pre-push`** — auto-fixes formatting and lint for the whole project
   (`yarn format` + `yarn lint`). If those commands modified any files, the push
   is aborted with a list of changed files so they can be staged and committed
@@ -88,9 +96,11 @@ The `publish-prod` job:
 
 One-time setup for the workflows to run end-to-end:
 
-1. **Repo secrets**
+1. **Repo (or org-level) secrets**
    - `NPM_TOKEN` — npm automation token with publish access on the
-     `@agrippa-io` scope.
+     `@agrippa-io` scope. Recommended: store this as an **organization
+     secret** scoped to selected repos so a single token rotation propagates to
+     every consumer. Granular tokens are preferred over classic tokens.
    - `RELEASE_TOKEN` — GitHub PAT with `contents: write`, used by `publish-prod`
      to push the version commit and tag back through branch protection. If
      `main` is unprotected you can replace this with the built-in
@@ -102,6 +112,42 @@ One-time setup for the workflows to run end-to-end:
    using a GitHub App token).
 4. **Default branch**: `develop` should be the working branch; `main` is
    release-only.
+5. **Bootstrap publish (first-time only)**. npm rejects the first publish of a
+   new package if it's a prerelease under a non-`latest` dist-tag. Before CI
+   can run, publish the current stable version once from a developer machine:
+
+   ```bash
+   yarn install --frozen-lockfile
+   yarn build
+   npm publish --tag latest --access restricted
+   ```
+
+   After this initial publish, all CI prerelease publishes (`canary`, `dev`,
+   `staging`) succeed because `latest` is already established.
+
+### Per-job permissions
+
+The workflows declare least-privilege `permissions:` on each job rather than
+relying on the repo-wide default. If you fork or duplicate these workflows,
+preserve these blocks or you will see `HttpError: Resource not accessible by
+integration` at runtime.
+
+| Job                          | Permissions                                            | Used by                                                     |
+| ---------------------------- | ------------------------------------------------------ | ----------------------------------------------------------- |
+| `ci.yml` → `publish-canary`  | `contents: read`, `pull-requests: write`               | `issues.createComment` to post the canary install snippet   |
+| `release.yml` → `publish-dev`| `contents: read`, `pull-requests: read`                | `repos.listPullRequestsAssociatedWithCommit` for PR lookup  |
+| `release.yml` → `publish-prod`| `contents: write`, `id-token: write`                  | `repos.createRelease`; `id-token` reserved for npm OIDC     |
+
+`publish-prod`'s `git push` uses `RELEASE_TOKEN` (configured via
+`actions/checkout`), not the default `GITHUB_TOKEN`, so the elevated `contents:
+write` is only consumed by `repos.createRelease`.
+
+### Package access
+
+The package is published as **private** (`npm publish --access restricted`).
+This requires `@agrippa-io` to be on a paid npm org plan; CI consumers must
+authenticate with `NODE_AUTH_TOKEN` set on their `Install` step or a
+project-level `.npmrc` referencing `${NODE_AUTH_TOKEN}`.
 
 ## Cutting a release (operator runbook)
 
