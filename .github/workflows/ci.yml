@@ -26,6 +26,8 @@ jobs:
           scope: '@agrippa-io'
 
       - name: Install
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: yarn install --frozen-lockfile
 
       - name: Format check
@@ -54,6 +56,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -67,6 +70,8 @@ jobs:
           scope: '@agrippa-io'
 
       - name: Install
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: yarn install --frozen-lockfile
 
       - name: Compute canary version
@@ -81,10 +86,10 @@ jobs:
       - name: Build
         run: yarn build
 
-      - name: Publish to npm (dist-tag: canary)
+      - name: 'Publish to npm (dist-tag: canary)'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --tag canary --access public
+        run: npm publish --tag canary --access restricted
 
       - name: Comment on PR
         uses: actions/github-script@v7

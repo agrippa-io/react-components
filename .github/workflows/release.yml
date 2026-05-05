@@ -46,6 +46,9 @@ jobs:
     needs: validate
     runs-on: ubuntu-latest
     environment: dev
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
 
@@ -59,18 +62,31 @@ jobs:
       - name: Install
         run: yarn install --frozen-lockfile
 
+      - name: Resolve PR number
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+            })
+            core.setOutput('number', data[0]?.number ?? 0)
+            core.setOutput('sha', (data[0]?.merge_commit_sha ?? context.sha).slice(0, 7))
+
       - name: Compute prerelease version
         run: |
           BASE=$(node -p "require('./package.json').version")
-          npm version "${BASE}-dev.${{ github.run_number }}" --no-git-tag-version --allow-same-version
+          npm version "${BASE}-dev.${{ steps.pr.outputs.number }}.${{ steps.pr.outputs.sha }}" --no-git-tag-version --allow-same-version
 
       - name: Build
         run: yarn build
 
-      - name: Publish (dist-tag: dev)
+      - name: 'Publish (dist-tag: dev)'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --tag dev --access public
+        run: npm publish --tag dev --access restricted
 
   publish-staging:
     name: Publish to npm (staging)
@@ -99,10 +115,10 @@ jobs:
       - name: Build
         run: yarn build
 
-      - name: Publish (dist-tag: staging)
+      - name: 'Publish (dist-tag: staging)'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --tag staging --access public
+        run: npm publish --tag staging --access restricted
 
   publish-prod:
     name: Publish to npm (latest)
@@ -111,7 +127,8 @@ jobs:
     runs-on: ubuntu-latest
     environment: prod
     permissions:
-      contents: write
+      contents: write    # Required to create GitHub releases (push uses RELEASE_TOKEN via checkout)
+      id-token: write    # Required for OIDC/Trusted Publishing to npm
     steps:
       - uses: actions/checkout@v4
         with:
@@ -154,10 +171,10 @@ jobs:
       - name: Build
         run: yarn build
 
-      - name: Publish (dist-tag: latest)
+      - name: 'Publish (dist-tag: latest)'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --access public
+        run: npm publish --tag latest --access restricted
 
       - name: Push commit + tag
         run: git push --follow-tags origin main

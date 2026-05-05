@@ -1,3 +1,4 @@
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { isExpirationDateCurrent } from './isExpirationDateCurrent'
 
 describe('FormService - creditCard - utils - isExpirationDateCurrent({ value: string })', () => {
@@ -5,12 +6,12 @@ describe('FormService - creditCard - utils - isExpirationDateCurrent({ value: st
   let actual: boolean
 
   beforeAll(() => {
-    jest.useFakeTimers()
-    jest.setSystemTime(new Date('2025-05-15T00:00:00.000Z'))
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2025-05-15T00:00:00.000Z'))
   })
 
   afterAll(() => {
-    jest.useRealTimers()
+    vi.useRealTimers()
   })
 
   describe('Default Behavior', () => {
