@@ -83,7 +83,7 @@ jobs:
       - name: 'Publish (dist-tag: dev)'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --tag dev --access public
+        run: npm publish --tag dev --access restricted
 
   publish-staging:
     name: Publish to npm (staging)
@@ -115,7 +115,7 @@ jobs:
       - name: 'Publish (dist-tag: staging)'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --tag staging --access public
+        run: npm publish --tag staging --access restricted
 
   publish-prod:
     name: Publish to npm (latest)
@@ -170,7 +170,7 @@ jobs:
       - name: 'Publish (dist-tag: latest)'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --access public
+        run: npm publish --tag latest --access restricted
 
       - name: Push commit + tag
         run: git push --follow-tags origin main
