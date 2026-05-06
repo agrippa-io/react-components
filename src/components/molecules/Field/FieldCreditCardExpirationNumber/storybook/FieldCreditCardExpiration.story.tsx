@@ -27,12 +27,8 @@ const sxRow = {
   width: '100%',
 }
 
-const argTypesField = {
-  ...argTypesTextField,
-}
-if (argTypesField.onChange) {
-  delete argTypesField.onChange
-}
+const { onChange, ...argTypesField } = argTypesTextField
+void onChange
 
 export default {
   title: 'Components / molecules / Field / FieldCreditCard / FieldCreditCardExpiration',
