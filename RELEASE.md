@@ -94,10 +94,54 @@ The single `cut-release-branch` job:
 3. Verifies `release/<version>` does not already exist on origin (refuses to
    overwrite).
 4. Creates `release/<version>` and pushes it.
+5. Opens a **draft** PR `release/<version>` → `main` with title
+   `chore(release): <version>` and a pre-merge checklist body.
 
-Because the push is authenticated with `RELEASE_TOKEN` (a PAT) rather than the
-default `GITHUB_TOKEN`, it triggers the `publish-staging` job in `release.yml`
-automatically — pushes from `GITHUB_TOKEN` cannot trigger downstream workflows.
+#### Why draft?
+
+The PR is opened in **draft** status deliberately:
+
+- It signals to reviewers and automation that staging soak is in progress and
+  the PR should not be merged yet. The operator flips it to "Ready for review"
+  once the staging RC has been validated.
+- It prevents accidental merges by any auto-merge automation that gates on
+  `mergeable_state: clean`, since draft PRs are never `clean`.
+- It still surfaces in the PR list so QA can find the corresponding promotion
+  PR while validating the staging RC.
+
+#### Why `chore(release): <version>` as the default title?
+
+The `publish-prod` job parses the **squash-merge commit message** to choose the
+semver bump (see [`release.yml` — push-to-branch publish](#releaseyml--push-to-branch-publish)).
+A `chore:` prefix maps to a **patch** bump, which is the safest default — it
+will never accidentally promote a release as a `minor` or `major` change.
+
+If the release should ship as a `minor` or `major`, the operator edits the
+squash-merge commit title in the GitHub merge dialog **before clicking merge**:
+
+| Desired bump | Squash-merge title prefix                                |
+| ------------ | -------------------------------------------------------- |
+| patch        | `chore(release): 0.1.0` (default — no edit required)     |
+| minor        | `feat: 0.1.0` or `feat(scope): 0.1.0`                    |
+| major        | `feat!: 0.1.0` or include `BREAKING CHANGE` in the body  |
+
+Forcing operators to opt-in to non-patch bumps avoids the failure mode where
+a release branch with a single trivial commit silently promotes to a major
+version because someone authored a `feat!:` commit weeks ago on `develop`.
+
+#### Token usage in this workflow
+
+Two different tokens are used by design:
+
+- The **branch push** uses `RELEASE_TOKEN` (a PAT, configured via
+  `actions/checkout`). This is required because pushes authenticated with the
+  default `GITHUB_TOKEN` do not trigger downstream workflows — and the entire
+  point of pushing `release/<version>` is to trigger `publish-staging` in
+  `release.yml`.
+- The **PR creation** uses the default `GITHUB_TOKEN` (via the job's
+  `pull-requests: write` permission). PRs opened by `GITHUB_TOKEN` *do* fire
+  the standard `pull_request` events, and using the built-in token here keeps
+  the surface area of `RELEASE_TOKEN` minimal.
 
 The companion local script `scripts/release-stage.sh` (exposed as
 `yarn release-stage`) validates the version client-side and dispatches the
@@ -140,10 +184,25 @@ One-time setup for the workflows to run end-to-end:
      `@agrippa-io` scope. Recommended: store this as an **organization
      secret** scoped to selected repos so a single token rotation propagates to
      every consumer. Granular tokens are preferred over classic tokens.
-   - `RELEASE_TOKEN` — GitHub PAT with `contents: write`, used by `publish-prod`
-     to push the version commit and tag back through branch protection. If
-     `main` is unprotected you can replace this with the built-in
-     `secrets.GITHUB_TOKEN`.
+   - `RELEASE_TOKEN` — GitHub PAT with `Contents: Read and write`. Used by:
+     - `publish-prod` (in `release.yml`) to push the version commit and tag
+       back through branch protection.
+     - `cut-release-branch` (in `release-stage.yml`) to push `release/*`
+       branches in a way that triggers `publish-staging` (pushes from
+       `GITHUB_TOKEN` do not trigger downstream workflows).
+
+     **Important: fine-grained PAT resource owner.** When generating a
+     fine-grained PAT, the **Resource owner** must be set to `agrippa-io`
+     (the org), not your personal account. A fine-grained PAT issued against
+     your personal account has no access to org repos even if you're an org
+     admin, and pushes will fail with `Permission to ... denied to <you>` —
+     authenticated, but unauthorized for the org's resources. If your org
+     requires admin approval for fine-grained tokens, the token must also be
+     approved before the secret is usable. Classic PATs work too but require
+     SAML SSO authorization on each org if SSO is enabled.
+
+     If `main` is unprotected and you don't need to chain workflows, you can
+     replace `RELEASE_TOKEN` with the built-in `secrets.GITHUB_TOKEN`.
 2. **GitHub Environments** named `dev`, `staging`, `prod` — used to gate
    publishes (manual approvals, environment-scoped secrets).
 3. **Branch protection on `main`** must allow the release bot's `[skip ci]`
@@ -171,15 +230,23 @@ relying on the repo-wide default. If you fork or duplicate these workflows,
 preserve these blocks or you will see `HttpError: Resource not accessible by
 integration` at runtime.
 
-| Job                          | Permissions                                            | Used by                                                     |
-| ---------------------------- | ------------------------------------------------------ | ----------------------------------------------------------- |
-| `ci.yml` → `publish-canary`  | `contents: read`, `pull-requests: write`               | `issues.createComment` to post the canary install snippet   |
-| `release.yml` → `publish-dev`| `contents: read`, `pull-requests: read`                | `repos.listPullRequestsAssociatedWithCommit` for PR lookup  |
-| `release.yml` → `publish-prod`| `contents: write`, `id-token: write`                  | `repos.createRelease`; `id-token` reserved for npm OIDC     |
+| Job                                       | Permissions                                | Used by                                                           |
+| ----------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------- |
+| `ci.yml` → `publish-canary`               | `contents: read`, `pull-requests: write`   | `issues.createComment` to post the canary install snippet         |
+| `release.yml` → `publish-dev`             | `contents: read`, `pull-requests: read`    | `repos.listPullRequestsAssociatedWithCommit` for PR lookup        |
+| `release.yml` → `publish-prod`            | `contents: write`, `id-token: write`       | `repos.createRelease`; `id-token` reserved for npm OIDC           |
+| `release-stage.yml` → `cut-release-branch`| `contents: read`, `pull-requests: write`   | `gh pr create` opens the draft promotion PR (push uses RELEASE_TOKEN) |
 
-`publish-prod`'s `git push` uses `RELEASE_TOKEN` (configured via
-`actions/checkout`), not the default `GITHUB_TOKEN`, so the elevated `contents:
-write` is only consumed by `repos.createRelease`.
+Two jobs intentionally use the default `GITHUB_TOKEN` for some operations and
+`RELEASE_TOKEN` for others:
+
+- `publish-prod`: `git push` uses `RELEASE_TOKEN` (configured via
+  `actions/checkout`), so the elevated `contents: write` is only consumed by
+  `repos.createRelease`.
+- `cut-release-branch`: the branch push uses `RELEASE_TOKEN` (so the push
+  triggers `publish-staging` downstream); `gh pr create` uses the default
+  `GITHUB_TOKEN`, which is why the job declares `pull-requests: write` rather
+  than relying on the PAT.
 
 ### Package access
 
@@ -201,14 +268,20 @@ project-level `.npmrc` referencing `${NODE_AUTH_TOKEN}`.
    yarn release-stage 0.1.0
    ```
 
-   This dispatches the `release-stage.yml` workflow, which creates and pushes
-   `release/0.1.0` from `develop`'s tip. The push triggers `publish-staging`,
-   which publishes `0.1.0-rc.<run_number>` under dist-tag `staging`.
+   This dispatches the `release-stage.yml` workflow, which:
+   - creates and pushes `release/0.1.0` from `develop`'s tip (triggers
+     `publish-staging` → publishes `0.1.0-rc.<run_number>` under dist-tag
+     `staging`); and
+   - opens a **draft** PR `release/0.1.0 → main` titled
+     `chore(release): 0.1.0` with a pre-merge checklist body.
 
    Subsequent commits to `release/0.1.0` (stabilization fixes from your local
    machine) each republish a new RC under the same `staging` tag.
-4. After staging soak, PR `release/0.1.0` → `main`. Merging triggers
-   `publish-prod`, which bumps the version, tags, and publishes `latest`.
+4. After staging soak, mark the draft PR as ready, then merge it. Merging
+   triggers `publish-prod`, which bumps the version, tags, and publishes
+   `latest`. To control the bump (minor / major), edit the squash-merge commit
+   title before clicking merge — see the conventional-commit prefixes in the PR
+   body or in [Forcing a specific bump](#forcing-a-specific-bump) below.
 5. Merge `main` back into `develop` so the version bump and any hotfixes flow
    downstream.
 

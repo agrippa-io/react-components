@@ -12,6 +12,9 @@ jobs:
   cut-release-branch:
     name: 'Cut release/${{ inputs.version }} from develop'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - name: Validate version input
         run: |
@@ -73,3 +76,43 @@ jobs:
           git push -u origin "$BRANCH"
           echo "Pushed $BRANCH from develop@$(git rev-parse --short HEAD)"
           echo "publish-staging will publish ${{ inputs.version }}-rc.<run_number> with dist-tag staging"
+
+      - name: Open release PR to main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="release/${{ inputs.version }}"
+          BODY=$(cat <<EOF
+          Promotes \`$BRANCH\` to \`main\`.
+
+          ## Pre-merge checklist
+
+          - [ ] \`publish-staging\` has succeeded for this branch
+          - [ ] Staging RC \`${{ inputs.version }}-rc.<run_number>\` validated against \`@agrippa-io/react-components@staging\`
+          - [ ] Any stabilization fixes committed to \`$BRANCH\` (each push republishes the staging RC)
+
+          ## Merge behavior
+
+          Merging this PR triggers \`publish-prod\`, which:
+
+          1. Reads the **squash-merge commit message** to choose the semver bump:
+             - \`feat:\` / \`feat(scope):\` → minor
+             - \`feat!:\` / \`BREAKING CHANGE\` → major
+             - anything else → patch
+          2. Runs \`npm version <bump>\`, tags, and publishes to npm under dist-tag \`latest\`.
+          3. Pushes the version commit and tag back to \`main\`.
+
+          To control the prod version bump, edit the squash-merge commit title before merging.
+
+          ## After merge
+
+          Remember to merge \`main\` back into \`develop\` so the version bump and any release fixes flow downstream.
+          EOF
+          )
+
+          gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "chore(release): ${{ inputs.version }}" \
+            --body "$BODY" \
+            --draft
