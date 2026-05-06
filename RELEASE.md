@@ -70,8 +70,61 @@ The `publish-prod` job:
 2. Runs `npm version <bump>`, which creates a `chore(release): vX.Y.Z [skip ci]`
    commit and a matching git tag.
 3. Runs `yarn build` and publishes to npm with dist-tag `latest`.
-4. Pushes the version commit and tag back to `main`.
-5. Creates a GitHub Release with auto-generated notes.
+4. Builds and pushes a Docker image to AWS ECR (see [Docker image publish](#docker-image-publish-publish-prod)).
+5. Pushes the version commit and tag back to `main`.
+6. Creates a GitHub Release with auto-generated notes.
+
+#### Docker image publish (`publish-prod`)
+
+Following the npm publish, `publish-prod` builds a Docker image from the
+project's `Dockerfile` and pushes it to AWS ECR with two tags per release:
+
+| Tag                                                              | Purpose                                          |
+| ---------------------------------------------------------------- | ------------------------------------------------ |
+| `${URL_DOCKER_REGISTRY}:vX.Y.Z` (the `npm version` output)       | Immutable, traceable to a specific git tag       |
+| `${URL_DOCKER_REGISTRY}:latest`                                  | Floating reference to the most recent prod build |
+
+The pipeline uses four cooperating steps after the npm publish:
+
+1. **`aws-actions/configure-aws-credentials@v4`** — assumes `AWS_DEPLOY_ROLE_ARN`
+   via GitHub OIDC (no long-lived AWS keys). The job's existing `id-token: write`
+   permission, originally added for npm OIDC, is reused — OIDC tokens are
+   audience-scoped so AWS and npm can coexist.
+2. **`aws-actions/amazon-ecr-login@v2`** — exchanges the AWS credential for a
+   docker-login token against the ECR registry.
+3. **`docker/setup-buildx-action@v3`** — enables BuildKit features (secret
+   mounts, GHA layer cache).
+4. **`docker/build-push-action@v5`** — builds and pushes both tags. The npm
+   token is passed as a **BuildKit secret** (`secrets: npm_token=...`), not as
+   a `build-args:` value, so it is mounted at build time only and never lands
+   in any image layer.
+
+The image build uses GitHub Actions cache (`cache-from: type=gha`, `cache-to:
+type=gha,mode=max`), so dependency layers are reused across runs and only the
+diffed layers are rebuilt.
+
+##### `Dockerfile` — multi-stage build with BuildKit secret mount
+
+The `Dockerfile` is split into two stages so the final image carries the
+resolved dependency tree but not the credentials used to fetch it:
+
+- **`deps` stage** — runs `yarn install` with `NPM_TOKEN` mounted via
+  `--mount=type=secret,id=npm_token`. The token lives only in tmpfs at
+  `/run/secrets/npm_token` for the duration of the `RUN`. The step writes a
+  temporary `.npmrc` from it, runs `yarn install --frozen-lockfile`, then
+  `rm -f .npmrc` before the layer is committed. The token never appears in
+  any layer's filesystem, environment, or history.
+- **`build` stage** — copies `node_modules` from `deps` and the project
+  source into a clean image. No credential files are present.
+
+This replaces the previous single-stage Dockerfile which used `RUN echo
+"...${NPM_TOKEN}" >> .npmrc` — that pattern persists the token in the layer
+where the `RUN` executed, so anyone with `docker pull` access could
+`docker run` and `cat .npmrc` to recover it. The risk was contained to the
+private ECR registry, but the multi-stage refactor closes the leak entirely.
+
+The first line of the `Dockerfile` (`# syntax=docker/dockerfile:1.7`) is
+required to enable BuildKit secret mount syntax — do not remove it.
 
 ### `release-stage.yml` — operator-triggered release branch cut
 
@@ -205,12 +258,69 @@ One-time setup for the workflows to run end-to-end:
      replace `RELEASE_TOKEN` with the built-in `secrets.GITHUB_TOKEN`.
 2. **GitHub Environments** named `dev`, `staging`, `prod` — used to gate
    publishes (manual approvals, environment-scoped secrets).
-3. **Branch protection on `main`** must allow the release bot's `[skip ci]`
+
+3. **AWS / ECR for Docker publish** (used by `publish-prod`):
+   - **Repo (or `prod` environment) variable** `URL_DOCKER_REGISTRY` — the
+     full ECR repository URL (e.g.
+     `739504454286.dkr.ecr.us-west-1.amazonaws.com/agrippa-dev/react-components`).
+     Stored as a GitHub Actions **variable** (`vars.`), not a secret —
+     registry URLs aren't sensitive and storing them as variables makes them
+     visible in the workflow logs and run summary, which is useful for
+     auditability.
+
+     ```bash
+     gh variable set URL_DOCKER_REGISTRY --env prod \
+       --body '739504454286.dkr.ecr.us-west-1.amazonaws.com/agrippa-dev/react-components'
+     ```
+
+   - **Repo (or `prod` environment) secret** `AWS_DEPLOY_ROLE_ARN` — IAM role
+     ARN that GitHub OIDC assumes during `publish-prod`. The role's trust
+     policy must trust GitHub's OIDC provider and restrict to this repo's
+     `main` branch:
+
+     ```json
+     {
+       "Effect": "Allow",
+       "Principal": { "Federated": "arn:aws:iam::739504454286:oidc-provider/token.actions.githubusercontent.com" },
+       "Action": "sts:AssumeRoleWithWebIdentity",
+       "Condition": {
+         "StringEquals": { "token.actions.githubusercontent.com:aud": "sts.amazonaws.com" },
+         "StringLike":   { "token.actions.githubusercontent.com:sub": "repo:agrippa-io/react-components:ref:refs/heads/main" }
+       }
+     }
+     ```
+
+     The role's permission policy needs the standard ECR push set:
+     `ecr:GetAuthorizationToken`, `ecr:BatchCheckLayerAvailability`,
+     `ecr:InitiateLayerUpload`, `ecr:UploadLayerPart`,
+     `ecr:CompleteLayerUpload`, `ecr:PutImage` — scoped to the target
+     repository ARN.
+
+     If the org's AWS account doesn't yet have a GitHub OIDC identity
+     provider, add it once via IAM → Identity providers → Add provider →
+     OpenID Connect → URL `https://token.actions.githubusercontent.com`,
+     audience `sts.amazonaws.com`.
+
+   - **ECR repository** must exist before the first publish (ECR does not
+     auto-create on first push). Tag immutability is recommended:
+
+     ```bash
+     aws ecr create-repository \
+       --region us-west-1 \
+       --repository-name agrippa-dev/react-components \
+       --image-tag-mutability IMMUTABLE
+     ```
+
+     With immutability on, the versioned tag (`v0.1.0`) cannot be overwritten;
+     only the `latest` tag rotates. This matches the npm dist-tag model
+     (`vX.Y.Z` immutable, `latest` floating) and prevents accidental tag
+     reuse during retries.
+4. **Branch protection on `main`** must allow the release bot's `[skip ci]`
    commit (either via a bypass rule for the `RELEASE_TOKEN` identity, or by
    using a GitHub App token).
-4. **Default branch**: `develop` should be the working branch; `main` is
+5. **Default branch**: `develop` should be the working branch; `main` is
    release-only.
-5. **Bootstrap publish (first-time only)**. npm rejects the first publish of a
+6. **Bootstrap publish (first-time only)**. npm rejects the first publish of a
    new package if it's a prerelease under a non-`latest` dist-tag. Before CI
    can run, publish the current stable version once from a developer machine:
 

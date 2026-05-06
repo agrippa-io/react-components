@@ -1,7 +1,7 @@
 import path from 'path'
 import {
   MainFactory
-} from '@agrippa-io/storybook-mui-5/dist/factories'
+} from '@agrippa-io/storybook-mui-5/dist/factories/index.js'
 
 export const storybookMainConfig = MainFactory({
   core: {

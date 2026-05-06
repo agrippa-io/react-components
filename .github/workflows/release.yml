@@ -184,6 +184,31 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --tag latest --access restricted
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: us-west-1
+
+      - name: Log in to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Docker image to ECR
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ vars.URL_DOCKER_REGISTRY }}:${{ steps.version.outputs.version }}
+            ${{ vars.URL_DOCKER_REGISTRY }}:latest
+          secrets: |
+            npm_token=${{ secrets.NPM_TOKEN }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
       - name: Push commit + tag
         run: git push --follow-tags origin main
 
