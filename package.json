@@ -51,6 +51,7 @@
     "format": "./node_modules/.bin/prettier --write --parser typescript 'src/**/*.{ts,tsx}'",
     "format:check": "./node_modules/.bin/prettier --check --parser typescript 'src/**/*.{ts,tsx}'",
     "prepublishOnly": "yarn build",
+    "release-stage": "bash ./scripts/release-stage.sh",
     "eject:app": "./node_modules/.bin/react-scripts eject",
     "lint": "./node_modules/.bin/eslint . --ext .ts,.tsx --fix",
     "prepare": "./node_modules/.bin/husky install",

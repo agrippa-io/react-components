@@ -1,0 +1,118 @@
+name: release-stage
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (semver, e.g. 0.1.0)'
+        required: true
+        type: string
+
+jobs:
+  cut-release-branch:
+    name: 'Cut release/${{ inputs.version }} from develop'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Validate version input
+        run: |
+          if ! [[ "${{ inputs.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::version must be semver x.y.z (got: ${{ inputs.version }})"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Verify release branch does not already exist
+        run: |
+          BRANCH="release/${{ inputs.version }}"
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            echo "::error::Branch $BRANCH already exists on origin"
+            exit 1
+          fi
+
+      - name: 'Debug: probe token write permission'
+        run: |
+          echo "::group::git remote"
+          git remote -v
+          echo "::endgroup::"
+
+          echo "::group::read check"
+          if git ls-remote --exit-code origin >/dev/null 2>&1; then
+            echo "read: OK"
+          else
+            echo "read: FAIL"
+          fi
+          echo "::endgroup::"
+
+          echo "::group::write probe (push throwaway ref, then delete)"
+          set +e
+          git push origin "HEAD:refs/heads/_perm_check_release_stage" 2>&1
+          PUSH_RC=$?
+          if [ $PUSH_RC -eq 0 ]; then
+            echo "write: OK"
+            git push origin --delete _perm_check_release_stage 2>&1 || true
+          else
+            echo "write: FAIL (exit $PUSH_RC) — see remote: lines above"
+          fi
+          set -e
+          echo "::endgroup::"
+
+      - name: Create and push release branch
+        run: |
+          BRANCH="release/${{ inputs.version }}"
+          git checkout -b "$BRANCH"
+          git push -u origin "$BRANCH"
+          echo "Pushed $BRANCH from develop@$(git rev-parse --short HEAD)"
+          echo "publish-staging will publish ${{ inputs.version }}-rc.<run_number> with dist-tag staging"
+
+      - name: Open release PR to main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="release/${{ inputs.version }}"
+          BODY=$(cat <<EOF
+          Promotes \`$BRANCH\` to \`main\`.
+
+          ## Pre-merge checklist
+
+          - [ ] \`publish-staging\` has succeeded for this branch
+          - [ ] Staging RC \`${{ inputs.version }}-rc.<run_number>\` validated against \`@agrippa-io/react-components@staging\`
+          - [ ] Any stabilization fixes committed to \`$BRANCH\` (each push republishes the staging RC)
+
+          ## Merge behavior
+
+          Merging this PR triggers \`publish-prod\`, which:
+
+          1. Reads the **squash-merge commit message** to choose the semver bump:
+             - \`feat:\` / \`feat(scope):\` → minor
+             - \`feat!:\` / \`BREAKING CHANGE\` → major
+             - anything else → patch
+          2. Runs \`npm version <bump>\`, tags, and publishes to npm under dist-tag \`latest\`.
+          3. Pushes the version commit and tag back to \`main\`.
+
+          To control the prod version bump, edit the squash-merge commit title before merging.
+
+          ## After merge
+
+          Remember to merge \`main\` back into \`develop\` so the version bump and any release fixes flow downstream.
+          EOF
+          )
+
+          gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "chore(release): ${{ inputs.version }}" \
+            --body "$BODY" \
+            --draft
