@@ -73,6 +73,45 @@ The `publish-prod` job:
 4. Pushes the version commit and tag back to `main`.
 5. Creates a GitHub Release with auto-generated notes.
 
+### `release-stage.yml` — operator-triggered release branch cut
+
+Gitflow does not auto-promote `develop` to `main`; cutting a `release/*` branch
+from `develop` is a deliberate human action. This workflow automates the branch
+cut so operators don't have to `git checkout -b` manually.
+
+Triggered by `workflow_dispatch` with a single input:
+
+| Input     | Type   | Required | Description                                |
+| --------- | ------ | -------- | ------------------------------------------ |
+| `version` | string | yes      | Strict semver, e.g. `0.1.0` (no `v` prefix) |
+
+The single `cut-release-branch` job:
+
+1. Validates `version` matches `^[0-9]+\.[0-9]+\.[0-9]+$`. Pre-release tags
+   (`0.1.0-rc.1`) are rejected — those names are reserved for the `staging`
+   dist-tag versions that `publish-staging` mints automatically.
+2. Checks out `develop` at its current tip using `RELEASE_TOKEN`.
+3. Verifies `release/<version>` does not already exist on origin (refuses to
+   overwrite).
+4. Creates `release/<version>` and pushes it.
+
+Because the push is authenticated with `RELEASE_TOKEN` (a PAT) rather than the
+default `GITHUB_TOKEN`, it triggers the `publish-staging` job in `release.yml`
+automatically — pushes from `GITHUB_TOKEN` cannot trigger downstream workflows.
+
+The companion local script `scripts/release-stage.sh` (exposed as
+`yarn release-stage`) validates the version client-side and dispatches the
+workflow via the GitHub CLI:
+
+```bash
+yarn release-stage 0.1.0
+# → validates semver
+# → gh workflow run release-stage.yml --ref develop -f version=0.1.0
+```
+
+Requires `gh` to be installed and authenticated against the repo. The script
+prints a `gh run watch` command so the operator can follow the dispatched run.
+
 ## Local hooks (`husky`)
 
 - **`.husky/pre-commit`** — runs `lint-staged` against staged `.ts/.tsx` files
@@ -156,9 +195,19 @@ project-level `.npmrc` referencing `${NODE_AUTH_TOKEN}`.
 1. Open PRs against `develop`. Each PR push publishes a canary; QA can install
    `@agrippa-io/react-components@<canary-version>` to validate.
 2. Merge to `develop`. The `dev` dist-tag is updated automatically.
-3. When ready to stabilize, branch `release/x.y.0` from `develop`. Each push to
-   that branch publishes a staging RC.
-4. After staging soak, PR `release/x.y.0` → `main`. Merging triggers
+3. When ready to stabilize, cut a release branch from `develop`:
+
+   ```bash
+   yarn release-stage 0.1.0
+   ```
+
+   This dispatches the `release-stage.yml` workflow, which creates and pushes
+   `release/0.1.0` from `develop`'s tip. The push triggers `publish-staging`,
+   which publishes `0.1.0-rc.<run_number>` under dist-tag `staging`.
+
+   Subsequent commits to `release/0.1.0` (stabilization fixes from your local
+   machine) each republish a new RC under the same `staging` tag.
+4. After staging soak, PR `release/0.1.0` → `main`. Merging triggers
    `publish-prod`, which bumps the version, tags, and publishes `latest`.
 5. Merge `main` back into `develop` so the version bump and any hotfixes flow
    downstream.
