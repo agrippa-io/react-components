@@ -39,6 +39,33 @@ jobs:
             exit 1
           fi
 
+      - name: 'Debug: probe token write permission'
+        run: |
+          echo "::group::git remote"
+          git remote -v
+          echo "::endgroup::"
+
+          echo "::group::read check"
+          if git ls-remote --exit-code origin >/dev/null 2>&1; then
+            echo "read: OK"
+          else
+            echo "read: FAIL"
+          fi
+          echo "::endgroup::"
+
+          echo "::group::write probe (push throwaway ref, then delete)"
+          set +e
+          git push origin "HEAD:refs/heads/_perm_check_release_stage" 2>&1
+          PUSH_RC=$?
+          if [ $PUSH_RC -eq 0 ]; then
+            echo "write: OK"
+            git push origin --delete _perm_check_release_stage 2>&1 || true
+          else
+            echo "write: FAIL (exit $PUSH_RC) — see remote: lines above"
+          fi
+          set -e
+          echo "::endgroup::"
+
       - name: Create and push release branch
         run: |
           BRANCH="release/${{ inputs.version }}"
