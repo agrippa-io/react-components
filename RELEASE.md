@@ -227,6 +227,181 @@ prints a `gh run watch` command so the operator can follow the dispatched run.
 - `"prepublishOnly": "yarn build"` — `npm publish` always rebuilds from source,
   so the published package cannot drift from the committed source.
 - `dist/` is `.gitignore`'d — built locally and in CI, never committed.
+- Scripts are organized by purpose. The library build is **Vite**
+  (`yarn build` → `tsc -p tsconfig.prod.json && vite build`); Storybook is the
+  development surface (`yarn start` → `yarn start:storybook`); tests are
+  **Vitest** (`yarn test`). Legacy CRA scripts (`*:app`) and `react-scripts`
+  itself were removed — the project never used CRA at runtime; those scripts
+  were vestigial scaffolding.
+- A `resolutions` block pins three transitive type packages:
+  - `@types/minimatch: 5.1.2` — overrides the deprecated `@types/minimatch@6`
+    stub (no `.d.ts` files, breaks the prod `tsc` compile with TS2688).
+  - `@types/react: ^18.3.28` and `@types/react-dom: ^18.3.0` — three
+    transitive packages (`@types/google-map-react`, `@types/react-html-email`,
+    `@types/react-input-mask`) pull in `@types/react@19`, which conflicts
+    with the project's React 18 runtime and surfaces as
+    "Type 'bigint' is not assignable to type 'ReactNode'" on every JSX
+    component in `EmailSignupWelcome.tsx`. Pinning to 18 keeps types aligned
+    with runtime React.
+
+## Dev tooling stack
+
+The dev surface is independent from the published artifact (which is
+Vite-built `dist/` shipped to npm), but matters for CI parity and for anyone
+contributing locally:
+
+| Tool      | Version | Purpose                                                |
+| --------- | ------- | ------------------------------------------------------ |
+| Node      | `24.x` (pinned in `.nvmrc` to `24.0.0`) | Runtime for all yarn scripts and CI jobs |
+| TypeScript| `^5.8`  | Source language (compiled by Vite for the library, by SWC for Storybook) |
+| Vite      | (peer-managed) | Library build: produces `dist/index.es.js` + types     |
+| Vitest    | `^1.x`  | Unit tests (`yarn test` / `vitest related --run` in pre-commit) |
+| Storybook | `^9.0`  | Component playground and documentation surface         |
+| ESLint    | `^8.55` | Lint + format gate (with prettier integration)         |
+
+### Node version
+
+`.nvmrc` is the source of truth (`24.0.0`). All CI jobs use
+`actions/setup-node@v4` with `node-version-file: '.nvmrc'`, so a single bump
+of `.nvmrc` propagates to every workflow. The `Dockerfile` base image is
+pinned to `FROM node:24` (major-only) to track the latest 24.x LTS minor
+without a code change.
+
+### Storybook 9
+
+Storybook is a developer-only dependency — it is never bundled into the
+published package. The relevant scripts:
+
+```bash
+yarn start                # alias for start:storybook
+yarn start:storybook      # storybook dev -p 6006
+yarn build:storybook      # storybook build (produces storybook-static/)
+```
+
+Configuration lives in `.storybook/`:
+
+- `main.js` — framework (`@storybook/react-webpack5`), addons
+  (`addon-links`, `addon-webpack5-compiler-swc`), TypeScript docgen, static
+  asset directory, and `webpackFinal` for SVG handling via `@svgr/webpack`
+  (CRA-compatible `import { ReactComponent }` shape) plus emotion legacy
+  aliases.
+- `preview.js` — global font CSS, `controls` matchers for color/date, and a
+  global `tags: ['autodocs']` so every story generates docs by default.
+- `manager.js` — sets the dark theme via `storybook/manager-api`.
+
+Storybook 9 collapsed most addons into core. The repo previously depended on
+`@storybook/addon-essentials`, `@storybook/addon-interactions`,
+`@storybook/manager-api`, `@storybook/preview-api`, `@storybook/test`, and
+`@storybook/theming` as separate packages — these are gone. Their APIs are
+reached via deep imports off the single `storybook` package (e.g.
+`storybook/manager-api`, `storybook/test`).
+
+### Why a SWC compiler addon and `@svgr/webpack`?
+
+These two are non-obvious and worth documenting because the symptoms of
+removing either are confusing:
+
+- **`@storybook/addon-webpack5-compiler-swc`** — Storybook 8+ no longer ships
+  a `babel-loader` by default in the `react-webpack5` framework. Without a
+  compiler addon, every `.tsx` story file fails to parse with `Module parse
+  failed: Unexpected token` on `import type` or JSX. The SWC addon is the
+  recommended choice (faster than babel, less config); babel is also
+  available via `@storybook/addon-webpack5-compiler-babel`.
+- **`@svgr/webpack`** — the source code uses CRA's
+  `import { ReactComponent as Icon } from './foo.svg'` pattern (not just URL
+  imports). CRA wired up `@svgr/webpack` automatically; Storybook does not.
+  Without it, the `ReactComponent` named export resolves to `undefined`,
+  icons render as empty wrappers, and webpack only emits a `WARN export ...
+  was not found` (no hard error). The `webpackFinal` block configures svgr
+  with `exportType: 'named'` + `namedExport: 'ReactComponent'` to match the
+  CRA shape so existing imports work without per-file refactor.
+
+### Story file conventions
+
+All 13 story files use **CSF 3** (object-based) — `Meta` and `StoryObj`
+imported as types from the **framework** package `@storybook/react-webpack5`,
+not the renderer `@storybook/react`. The `eslint-plugin-storybook@9` rule
+`storybook/no-renderer-packages` enforces this — importing from
+`@storybook/react` triggers a lint error in pre-commit. The framework import
+is also more accurate: it includes any builder-specific extensions to the
+`Meta` / `StoryObj` types and tracks the builder you actually run.
+
+If you migrate the Storybook builder later (e.g. to Vite), one sed handles
+the story-file half of the switch:
+
+```bash
+grep -rl "from '@storybook/react-webpack5'" src | \
+  xargs sed -i '' "s|from '@storybook/react-webpack5'|from '@storybook/react-vite'|g"
+```
+
+CSF 2 (function-based, `ComponentStory<typeof X>`) was removed in
+Storybook 9. New stories should follow the CSF 3 pattern:
+
+```tsx
+import type { Meta, StoryObj } from '@storybook/react-webpack5'
+import { Component } from './Component'
+
+const meta: Meta<typeof Component> = {
+  title: 'Components / atoms / Component',
+  component: Component,
+  argTypes: {
+    /* ... */
+  },
+}
+export default meta
+
+export const Default: StoryObj<typeof Component> = {
+  args: {
+    /* default props */
+  },
+  // Custom render only when needed (e.g. wrapping in providers):
+  // render: (args) => <FormProvider><Component {...args} /></FormProvider>,
+}
+```
+
+### Autodocs (opt-in by default, opt-out per story)
+
+Autodocs generates a Docs tab for every story that includes the `autodocs`
+tag. The original Storybook 7 setup used `docs.autodocs: true` (every story
+gets a Docs page); Storybook 9 removed that field, so the equivalent is set
+**globally** in `.storybook/preview.js`:
+
+```js
+// .storybook/preview.js
+const preview = {
+  parameters: { /* ... */ },
+  tags: ['autodocs'],   // <-- every story opts in by default
+}
+```
+
+This preserves the original "all stories have docs" behavior with one
+change in one file, instead of touching every meta.
+
+**To opt a single story out**, add `tags: ['!autodocs']` on its `meta`:
+
+```tsx
+const meta: Meta<typeof Component> = {
+  title: '...',
+  component: Component,
+  tags: ['!autodocs'],   // overrides the global opt-in for this story only
+}
+```
+
+The leading `!` is Storybook 9's tag-negation syntax — it removes a tag
+that would otherwise be inherited from the global `preview.js` tags.
+
+**When to opt out**: the autodocs Docs tab assumes the story's render is a
+representative single instance of `meta.component` driven by `args`. Opt
+out for stories where that assumption breaks — e.g.
+
+- Showcase grids that render many static instances regardless of `args`
+  (the Controls table would only drive a subset of what's on screen).
+- Stories that intentionally don't follow the single-component pattern
+  (e.g. multi-component layout demos).
+
+Currently only `IconCreditCardLogo.story.tsx` opts out — its render shows
+every `iconStyle × company` combination in a static grid, so the Docs page
+is misleading. The other 12 story files inherit the global opt-in.
 
 ## Required configuration
 

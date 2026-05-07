@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { ComponentStory, ComponentMeta } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-webpack5'
 
 import { FieldCreditCardExpiration } from '../FieldCreditCardExpiration'
 import { FormProvider, useForm } from 'react-hook-form'
@@ -30,55 +30,52 @@ const sxRow = {
 const { onChange, ...argTypesField } = argTypesTextField
 void onChange
 
-export default {
+const meta: Meta<typeof FieldCreditCardExpiration> = {
   title: 'Components / molecules / Field / FieldCreditCard / FieldCreditCardExpiration',
   component: FieldCreditCardExpiration,
   argTypes: argTypesField,
-} as ComponentMeta<typeof FieldCreditCardExpiration>
+}
+export default meta
 
-export const FieldCreditCardExpirationStory: ComponentStory<typeof FieldCreditCardExpiration> = (
-  args,
-) => {
-  const formProviderProps = useForm({
-    mode: 'onChange',
-  })
-  const onSubmit = (data: any) => console.log('Form Data', data)
+export const FieldCreditCardExpirationStory: StoryObj<typeof FieldCreditCardExpiration> = {
+  render: (args) => {
+    const formProviderProps = useForm({
+      mode: 'onChange',
+    })
+    const onSubmit = (data: any) => console.log('Form Data', data)
 
-  // if (args.onChange) {
-  //   delete args.onChange
-  // }
+    return (
+      <FormProvider {...formProviderProps}>
+        <Box sx={sxContainerRoot}>
+          <Box sx={sxContainerPane}>
+            <form style={{ width: '100%' }} onSubmit={formProviderProps.handleSubmit(onSubmit)}>
+              <Box sx={sxRow}>
+                <FieldCreditCardExpiration
+                  name="credit-card-expiration"
+                  textFieldProps={{
+                    helperText: 'Expiration',
+                    ...args,
+                  }}
+                />
+              </Box>
 
-  return (
-    <FormProvider {...formProviderProps}>
-      <Box sx={sxContainerRoot}>
-        <Box sx={sxContainerPane}>
-          <form style={{ width: '100%' }} onSubmit={formProviderProps.handleSubmit(onSubmit)}>
-            <Box sx={sxRow}>
-              <FieldCreditCardExpiration
-                name="credit-card-expiration"
-                textFieldProps={{
-                  helperText: 'Expiration',
-                  ...args,
-                }}
-              />
-            </Box>
-
-            <Box sx={sxRow}>
-              <Button
-                type="submit"
-                variant="outlined"
-                sx={{
-                  marginTop: '10px',
-                }}
-                fullWidth
-              >
-                Submit
-              </Button>
-            </Box>
-          </form>
+              <Box sx={sxRow}>
+                <Button
+                  type="submit"
+                  variant="outlined"
+                  sx={{
+                    marginTop: '10px',
+                  }}
+                  fullWidth
+                >
+                  Submit
+                </Button>
+              </Box>
+            </form>
+          </Box>
+          <ReactHookFormStatePane sx={sxContainerPane} />
         </Box>
-        <ReactHookFormStatePane sx={sxContainerPane} />
-      </Box>
-    </FormProvider>
-  )
+      </FormProvider>
+    )
+  },
 }

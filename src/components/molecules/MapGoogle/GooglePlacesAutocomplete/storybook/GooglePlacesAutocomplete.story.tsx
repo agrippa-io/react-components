@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { ComponentMeta } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-webpack5'
 
 import {
   GooglePlacesAutocomplete,
@@ -9,7 +9,7 @@ import {
 import { GooglePlacesAutocompleteArgTypes } from './GooglePlacesAutocomplete.argTypes'
 import { MapGoogleConfig } from '../../../../../../config'
 
-export default {
+const meta: Meta<typeof GooglePlacesAutocomplete> = {
   title: 'Components / molecules / MapGoogle / GooglePlacesAutocomplete',
   component: GooglePlacesAutocomplete,
   argTypes: GooglePlacesAutocompleteArgTypes,
@@ -18,8 +18,9 @@ export default {
       apiKey: MapGoogleConfig.apiKey,
     },
   },
-} as ComponentMeta<typeof GooglePlacesAutocomplete>
+}
+export default meta
 
-export const AutocompleteAPIOverview = (args: IGooglePlacesAutocompleteProps) => (
-  <GooglePlacesAutocomplete {...args} />
-)
+export const AutocompleteAPIOverview: StoryObj<typeof GooglePlacesAutocomplete> = {
+  render: (args: IGooglePlacesAutocompleteProps) => <GooglePlacesAutocomplete {...args} />,
+}

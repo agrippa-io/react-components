@@ -1,258 +1,168 @@
 # @agrippa-io/react-components
 
-This project is a React Component library that extends React Material UI.
+A React component library that extends Material UI, developed and previewed
+through Storybook, and published as a private package to npm under the
+`@agrippa-io` scope.
 
 > **Releases & CI/CD:** see [RELEASE.md](./RELEASE.md) for the branch model
-> (gitflow), GitHub Actions workflows, npm dist-tag strategy, and operator
-> runbook for cutting a release.
+> (gitflow), GitHub Actions workflows, npm dist-tag strategy, dev tooling
+> stack, and the operator runbook for cutting a release.
 
-### Technologies
-#### React
- - [React](https://react.dev/)
- - [Material UI](https://mui.com/)
- - [React Hook Form](https://react-hook-form.com/)
-#### State Management
- - [Redux](https://redux.js.org/)
- - [Redux Toolkit](https://redux-toolkit.js.org/)
-#### Testing
- - [Jest](https://jestjs.io/)
- - [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/)
-#### Release
- - Commits MUST include a signature:
-   ```
-   # Below is how you can configure your local system for signing commits
-   git config --global gpg.format ssh
-   git config --global user.signingkey /PATH/TO/.SSH/KEY.PUB
-   git config --global commit.gpgsign true
-    ```
- - For details on how this package is built, validated, and published to npm,
-   see [RELEASE.md](./RELEASE.md).
+## Technology stack
 
-### Project Architecture
-All implementation files should be stored in the `src` directory, which is 
-used as the source directory for the build commands.
+| Layer        | Tools                                                                |
+| ------------ | -------------------------------------------------------------------- |
+| Runtime      | React 18, Material UI 5, React Hook Form                             |
+| State        | Redux Toolkit, react-redux                                           |
+| Tests        | Vitest + React Testing Library                                       |
+| Library build| Vite (`vite build` produces `dist/index.es.js` + `dist/index.cjs.js` + types) |
+| Dev surface  | Storybook 9 (webpack5 builder, SWC compiler addon, `@svgr/webpack`)  |
+| Lint/format  | ESLint (flat-extending config) + Prettier (`yarn lint`, `yarn format`)|
+| Hooks        | Husky pre-commit (lint-staged) + pre-push (format + lint)            |
+| Node         | Pinned to `24.x` via `.nvmrc` (use `nvm use` before installing)      |
 
-The `src` directory is organized as follows:
- - `index.ts` - The `main` export file for the project
- - `assets` - Directory for storing assets importable by JavaScript (`.svg`, `.json`)
- - `components` - Directory for React Component implementations following 
-   Atomic Design Principles
- - `features` -   
- 
-### Design System
-#### Atomic Design Principle
-We organize components following the [Atomic Design](https://atomicdesign.
-bradfrost.com/chapter-2/) Pattern outlined by Brad Frost, which breaks UI 
-elements up into the following levels of organization:
- - `atoms` - the lowest level UI elements (i.e. `Link`, `Button`, `Typography`)
- - `molecules` - UI elements composed of 2 or more `atoms`
- - `organisms` - UI elements composed of many `atoms` and/or `molecules` (i.
-   e. `UserProfilePanel`, `PaymentCreditCardForm`, `NavigationSidebar`)
- - `templates` - UI elements that compose an entire Application Page, Primary 
-   Content or Email templates (i.e. `UserProfilePage`, `CheckoutPaymentPage`,
-   `WelcomeEmail`)
+For why each Storybook piece is there (SWC compiler, svgr, etc.), see the
+"Dev tooling stack" section in [RELEASE.md](./RELEASE.md).
 
-#### Material UI
-The project extends [Material UI](https://mui.com/), which in it's own 
-right operates as a Design System.
+## Releases
 
-Below are useful links for getting started:
- - [Components](https://mui.com/material-ui/all-components/)
- - [Theming](https://mui.com/material-ui/customization/theming/)
+Commits MUST be signed. Configure SSH commit signing once per machine:
 
-Since the project wraps the `Material UI` library, this project acts 
-primarily as a place to add Application/Organization specific 
-implementations while also providing a live demo of visual changes by 
-modifying/providing additional themes using `StorybookJS`.
-
-## Getting Started
+```bash
+git config --global gpg.format ssh
+git config --global user.signingkey /PATH/TO/.SSH/KEY.PUB
+git config --global commit.gpgsign true
 ```
-# Navigate to the directory you want to clone the repository
-cd <path>
 
-# Clone @agrippa-io
+The release pipeline (canary on PR, dev on `develop`, staging RC on
+`release/*`, latest on `main`) is documented in [RELEASE.md](./RELEASE.md).
+
+## Project architecture
+
+All implementation lives under `src/`:
+
+- `index.ts` — package entry point (the `main` export).
+- `assets/` — JavaScript-importable assets (`.svg`, `.json`).
+- `components/` — React components, organized by Atomic Design.
+- `services/` — non-component logic (form helpers, Google Maps service, etc.).
+- `features/` — feature-scoped composition.
+
+### Atomic Design
+
+Components are organized by [Atomic Design](https://atomicdesign.bradfrost.com/chapter-2/):
+
+- `atoms` — lowest-level UI elements (`Link`, `Button`, `Typography`).
+- `molecules` — composed of 2+ atoms (`FieldText`, `FieldCreditCardNumber`).
+- `organisms` — composed of atoms/molecules (`UserProfilePanel`,
+  `PaymentCreditCardForm`, `NavigationSidebar`).
+- `templates` — full-page or top-level compositions (`UserProfilePage`,
+  `CheckoutPaymentPage`, email templates like `EmailSignupWelcome`).
+
+### Material UI
+
+The library extends [Material UI](https://mui.com/) — components are typically
+thin wrappers that add app/organization-specific behavior on top of MUI
+primitives. Useful references:
+
+- [MUI components](https://mui.com/material-ui/all-components/)
+- [MUI theming](https://mui.com/material-ui/customization/theming/)
+
+Storybook serves as both the component playground and the visual diff surface
+for theming changes.
+
+## Getting started
+
+```bash
+# 1. Clone
 git clone git@github.com:agrippa-io/react-components.git
-
-# Navigate to the project directory
 cd react-components
 
-# Install the project dependencies
+# 2. Use the project's pinned Node version (24.x)
+nvm use            # reads .nvmrc
+
+# 3. Install dependencies (Yarn classic v1)
 yarn
 
-# Start the Storybook project
+# 4. Start Storybook on http://localhost:6006
 yarn start
 ```
 
-### Default Configuration
-#### `husky` & `lintstaged`
-This project has been setup with `husky` and `lintstaged` to execute scripts on 
-the `git` `pre-commit`.
+## Local hooks
 
-The default configuration of `.lintstagedrc` is as follows:
-```
+Husky + lint-staged are wired up by `yarn install` (via the `prepare` script).
+Configuration lives in `.lintstagedrc`:
+
+```jsonc
 {
-    "*.{ts,tsx}": [
-        "yarn format",  // Format files using Prettier
-        "yarn lint",    // Run ESLint checks
-        "yarn test"     // Execute tests
-    ]
+  "*.{ts,tsx}": [
+    "yarn format",                                    // Prettier write
+    "yarn lint",                                      // ESLint --fix
+    "./node_modules/.bin/vitest related --run --passWithNoTests"  // tests touching staged files
+  ]
 }
 ```
 
-This means that before a `git commit` is applied, `yarn format`, `yarn lint` 
-and `yarn test` are executed.
+`vitest related` only re-runs tests whose dependency graph touches the staged
+files, so the pre-commit hook stays fast as the suite grows.
 
-If any of these commands fail, the commit is aborted. You can bypass this 
-process by adding the `--no-verify` flag to the `git commit` command.
+The `pre-push` hook runs `yarn format` + `yarn lint` against the entire repo
+and aborts the push if either modified files (so you can stage + commit them
+before pushing again). This guarantees the push will pass the CI `format:check`
+and `lint` gates.
 
-> WARNING: The `--no-verify` flag should never be used with your `main` 
-> branch otherwise you are likely to introduce mal-formatted code OR code 
-> failing tests.
-> 
-> USE CASE: The `git commit` is failing lintstaged, but you want to push your
-> changes to a remote branch other than `main`.
+> ⚠ Use `git commit --no-verify` only on feature/work branches when you have a
+> good reason — never on `main` or `develop`. Bypassing the hook risks
+> introducing mal-formatted code or failing tests into shared branches.
 
-## Available Scripts
-
-In the project directory, you can run:
+## Available scripts
 
 ### Primary
-#### `yarn start`
 
-Since the project is primarily setup to be a Storybook project independent of a
-specific React Application, the `yarn start` command is a wrapper for `yarn 
-start:storybook`.
+| Script             | What it does                                                     |
+| ------------------ | ---------------------------------------------------------------- |
+| `yarn start`       | Alias for `yarn start:storybook`. Default dev surface.           |
+| `yarn build`       | `tsc -p tsconfig.prod.json && vite build` — produces `dist/`.    |
+| `yarn test`        | `vitest run --coverage` — single-pass test run with coverage.    |
+| `yarn test:watch`  | `vitest` in watch mode.                                          |
+| `yarn test:ui`     | Vitest's browser UI for inspecting tests interactively.          |
+| `yarn lint`        | `eslint . --ext .ts,.tsx --fix` — lint with auto-fix.            |
+| `yarn format`      | `prettier --write` against `src/**/*.{ts,tsx}`.                  |
+| `yarn format:check`| `prettier --check` (same paths). Used by CI gating.              |
 
-If you choose to clone this project and implement a React Application inside 
-the project, then you can replace the `yarn start` implementation in 
-`package.json` with `yarn start:app` to execute the `create-react-app` 
-`react-scripts start` command.
+### Storybook
 
-#### `yarn test`
+| Script                | What it does                                                  |
+| --------------------- | ------------------------------------------------------------- |
+| `yarn start:storybook`| `storybook dev -p 6006` — dev server on port 6006.            |
+| `yarn build:storybook`| `storybook build` — produces `storybook-static/`.             |
 
-Execute the project test files.
+### Release
 
-By default, the project is configured with `vitest`, `jest`, and
-`react-testing-library`.
+| Script              | What it does                                                          |
+| ------------------- | --------------------------------------------------------------------- |
+| `yarn release-stage`| Dispatches the `release-stage.yml` workflow to cut a release branch from `develop`. See [RELEASE.md](./RELEASE.md#release-stageyml--operator-triggered-release-branch-cut). |
 
-#### `yarn build`
+### Forking this repo
 
-The project is configured to create a `/dist` folder that can be configured 
-to be imported as a dependency to any JavaScript/Typescript project.
+If you fork this project under a different scope:
 
-This is implemented using the `vite` package, which creates both `CommonJs` 
-and `Module` type dependency files.
+1. Update the `name` field in `package.json` to your `@<scope>/<name>`.
+2. Set `version` to your starting version (`0.0.1` for a fresh start, or
+   `1.0.0` if you're cutting a production release).
+3. Run `yarn` to refresh `yarn.lock`.
+4. Run `yarn build` to verify the build produces a clean `dist/`.
+5. Update the GitHub Actions secrets / variables described in
+   [RELEASE.md](./RELEASE.md#required-configuration) for your fork's npm
+   organization, AWS account, and release token.
 
-##### Forked Repositories
-###### Before running `yarn build`
-Make sure that you have updated the `name`field in the `package.json` file to your 
-new project name. Also update the `version` field to the appropriate version 
-number that you would like to use.
+`dist/` is `.gitignore`'d — it is built fresh by `prepublishOnly` on every
+publish, so you do not need to commit the build output.
 
-Re-run `yarn` to update the `yarn.lock` file with the appropriate project 
-and version name.
+## Learn more
 
-```
-{
-  // Replace <organization> with your npm organization
-  // Replace <forked-project-name> with your desired name
-  "name": "@<organization>/<forked-project-name>",
-  // Most likely, the first time you do this you will publish at version 0.0.
-  0 or 1.0.0 if you are ready for a production release
-  // All subsequent values would be updated by adding 1 to either the 
-  <MAJOR>, <MINOR> or <PATCH> values following symantic versioning best 
-  practices
-  "version": "<MAJOR>.<MINOR>.<PATCH>",
-  // ...
-}
-```
-
-###### After running `yarn build`
-Makes sure to create a new commit to save the updated build to your repository.
-```
-# Stage the `./dist` folder
-yarn add ./dist
-
-# Commit the changes
-git commit -m "Built vX.X.X for distribution"
-
-# Make sure your remote repository is up-to-date with the build
-git push origin <branch>
-```
-
-###### Ready to publish to npm?
-Assuming you don't have any automated CI/CD process configured in remote 
-Version Control System AND you have made sure that version was updated and 
-built, you can now manually publish the current build version to `npm` by 
-running `npm publish`.
-
-> If you have scoped the project to an `npm organization` or if you are 
-> publishing to a `private` package, make sure that you have configured your 
-> `$HOME/.npmrc` file to properly handle authentication to `npm`.
-
-
-### utilities
-#### `yarn format`
-Runs `prettier --write --parse typescript '**/*.{ts,tsx}'` to reformat 
-project files based on the `.prettierrc`.
-
-#### `yarn lint`
-Runs `eslint . --ext .ts,.tsx --ignore-path .gitignore --fix` to lint-check 
-the project against the linter rules defined in `.eslintrc`.
-
-### storybook
-#### `yarn start:storybook`
-
-Runs the Storybook in the development mode.\
-Open [http://localhost:6006](http://localhost:6006) to view it in the browser.
-
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
-
-#### `yarn build:storybook`
-
-Builds the storybook for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-### react-scripts
-#### `yarn start:app`
-
-Runs the App in the development mode.\
-Open [http://localhost:6006](http://localhost:6006) to view it in the browser.
-
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
-
-#### `yarn test:app`
-
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
-
-#### `yarn build:app`
-
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-#### `yarn eject:app`
-
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
+- [React](https://react.dev/) — runtime
+- [Material UI](https://mui.com/) — design system base
+- [React Hook Form](https://react-hook-form.com/) — form library
+- [Storybook 9](https://storybook.js.org/docs/get-started) — dev/preview surface
+- [Vitest](https://vitest.dev/) — test runner
+- [Vite](https://vitejs.dev/) — library build tool

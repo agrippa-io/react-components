@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { ComponentStory, ComponentMeta } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-webpack5'
 
 import { FieldText } from '../FieldText'
 import { FormProvider, useForm } from 'react-hook-form'
@@ -27,84 +27,87 @@ const sxRow = {
   width: '100%',
 }
 
-export default {
+const meta: Meta<typeof FieldText> = {
   title: 'Components / molecules / Field / FieldText / Number',
   component: FieldText,
   argTypes: argTypesTextField,
-} as ComponentMeta<typeof FieldText>
+}
+export default meta
 
-export const FieldTextNumberComponent: ComponentStory<typeof TextField> = (args) => {
-  const formProviderProps = useForm({
-    mode: 'onChange',
-  })
-  const onSubmit = (data: any) => console.log('Form Data', data)
+export const FieldTextNumberComponent: StoryObj<typeof TextField> = {
+  render: (args) => {
+    const formProviderProps = useForm({
+      mode: 'onChange',
+    })
+    const onSubmit = (data: any) => console.log('Form Data', data)
 
-  return (
-    <FormProvider {...formProviderProps}>
-      <Box sx={sxContainerRoot}>
-        <Box sx={sxContainerPane}>
-          <form style={{ width: '100%' }} onSubmit={formProviderProps.handleSubmit(onSubmit)}>
-            <Box sx={sxRow}>
-              <FieldText
-                name="fieldNumber"
-                rules={{
-                  validate: validateNumber({}),
-                }}
-                textFieldProps={{
-                  label: 'Number',
-                  helperText: 'Enter a number',
-                  ...args,
-                  inputProps: {
-                    placeholder: 'Enter a number',
-                    ...(args?.inputProps ?? {}),
-                  },
-                }}
-              />
-            </Box>
+    return (
+      <FormProvider {...formProviderProps}>
+        <Box sx={sxContainerRoot}>
+          <Box sx={sxContainerPane}>
+            <form style={{ width: '100%' }} onSubmit={formProviderProps.handleSubmit(onSubmit)}>
+              <Box sx={sxRow}>
+                <FieldText
+                  name="fieldNumber"
+                  rules={{
+                    validate: validateNumber({}),
+                  }}
+                  textFieldProps={{
+                    label: 'Number',
+                    helperText: 'Enter a number',
+                    ...args,
+                    inputProps: {
+                      placeholder: 'Enter a number',
+                      ...(args?.inputProps ?? {}),
+                    },
+                  }}
+                />
+              </Box>
 
-            <Box sx={sxRow}>
-              <FieldText
-                name="fieldInt"
-                rules={{
-                  validate: validateInteger({}),
-                }}
-                textFieldProps={{
-                  label: 'Integer',
-                  helperText: 'Enter a integer',
-                  ...args,
-                  inputProps: {
-                    placeholder: 'Enter a integer',
-                    ...(args?.inputProps ?? {}),
-                  },
-                }}
-              />
-            </Box>
+              <Box sx={sxRow}>
+                <FieldText
+                  name="fieldInt"
+                  rules={{
+                    validate: validateInteger({}),
+                  }}
+                  textFieldProps={{
+                    label: 'Integer',
+                    helperText: 'Enter a integer',
+                    ...args,
+                    inputProps: {
+                      placeholder: 'Enter a integer',
+                      ...(args?.inputProps ?? {}),
+                    },
+                  }}
+                />
+              </Box>
 
-            <Box sx={sxRow}>
-              <FieldText
-                name="fieldFloat"
-                rules={{
-                  validate: validateFloat({}),
-                }}
-                textFieldProps={{
-                  label: 'Float',
-                  helperText: 'Enter a float',
-                  ...args,
-                  inputProps: {
-                    placeholder: 'Enter a float',
-                    ...(args?.inputProps ?? {}),
-                  },
-                }}
-              />
-            </Box>
+              <Box sx={sxRow}>
+                <FieldText
+                  name="fieldFloat"
+                  rules={{
+                    validate: validateFloat({}),
+                  }}
+                  textFieldProps={{
+                    label: 'Float',
+                    helperText: 'Enter a float',
+                    ...args,
+                    inputProps: {
+                      placeholder: 'Enter a float',
+                      ...(args?.inputProps ?? {}),
+                    },
+                  }}
+                />
+              </Box>
 
-            <Box sx={sxRow}>
-              <Button type="submit">Submit</Button>
-            </Box>
-          </form>
+              <Box sx={sxRow}>
+                <Button type="submit">Submit</Button>
+              </Box>
+            </form>
+          </Box>
+          <ReactHookFormStatePane sx={sxContainerPane} />
         </Box>
-        <ReactHookFormStatePane sx={sxContainerPane} />
-      </Box>
-    </FormProvider>
-  )
+      </FormProvider>
+    )
+  },
 }

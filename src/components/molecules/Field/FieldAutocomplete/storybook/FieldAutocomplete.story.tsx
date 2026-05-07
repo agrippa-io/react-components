@@ -1,20 +1,21 @@
 import React from 'react'
 
-import { ComponentMeta } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-webpack5'
 
 import { FieldAutocomplete, IFieldAutocompleteProps } from '../FieldAutocomplete'
 import { FieldAutocompleteArgTypes } from './FieldAutocomplete.argTypes'
 import { options } from './constants'
 
-export default {
+const meta: Meta<typeof FieldAutocomplete> = {
   title: 'Components / molecules / Field / FieldAutocomplete',
   component: FieldAutocomplete,
   argTypes: FieldAutocompleteArgTypes,
   args: {
     options,
   },
-} as ComponentMeta<typeof FieldAutocomplete>
+}
+export default meta
 
-export const FieldAutocompleteOverview = (args: IFieldAutocompleteProps) => (
-  <FieldAutocomplete {...args} />
-)
+export const FieldAutocompleteOverview: StoryObj<typeof FieldAutocomplete> = {
+  render: (args: IFieldAutocompleteProps) => <FieldAutocomplete {...args} />,
+}

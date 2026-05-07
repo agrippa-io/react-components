@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { ComponentMeta } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-webpack5'
 
 import { PlaceList, IPlaceListProps } from '../PlaceList'
 import { PlaceListItemDetailed } from '../components/PlaceListItemDetailed'
@@ -9,18 +9,20 @@ import { MapGoogleConfig } from '../../../../../../config'
 
 import { predictionToPlace } from '../../../../../services'
 
-export default {
+const meta: Meta<typeof PlaceList> = {
   title: 'Components / molecules / MapGoogle / PlaceList / PlaceListItemDetail',
   component: PlaceList,
   argTypes: {},
   args: {
     apiKey: MapGoogleConfig.apiKey,
   },
-} as ComponentMeta<typeof PlaceList>
+}
+export default meta
 
-export const PlaceListDetailed = (args: IPlaceListProps) => <PlaceList {...args} />
-
-PlaceListDetailed.args = {
-  places: PREDICTIONS.map((prediction) => predictionToPlace(prediction)),
-  ListItemComponent: PlaceListItemDetailed,
+export const PlaceListDetailed: StoryObj<typeof PlaceList> = {
+  args: {
+    places: PREDICTIONS.map((prediction) => predictionToPlace(prediction)),
+    ListItemComponent: PlaceListItemDetailed,
+  },
+  render: (args: IPlaceListProps) => <PlaceList {...args} />,
 }
