@@ -62,17 +62,60 @@ is traceable back to the PR and exact commit it came from. If a push lands on
 
 The `publish-prod` job:
 
-1. Reads the latest commit message and chooses a semver bump using
-   conventional-commit prefixes:
-   - `BREAKING CHANGE` or `<type>!:` → **major**
-   - `feat:` / `feat(scope):` → **minor**
-   - anything else → **patch**
-2. Runs `npm version <bump>`, which creates a `chore(release): vX.Y.Z [skip ci]`
-   commit and a matching git tag.
+1. **Resolves the target version** from the merge-commit *subject* (first
+   line only — never the body):
+   - If the subject matches `chore(release): X.Y.Z` (the default title from
+     `yarn release-stage`), publishes **exactly that version**. This makes
+     the version operators type into `yarn release-stage <version>` the
+     binding source of truth.
+   - Otherwise (e.g. a hotfix merged directly to `main`), falls back to a
+     bump inferred from the conventional-commit prefix on the subject:
+     - `<type>!:` or `BREAKING CHANGE` → **major**
+     - `feat:` / `feat(scope):` → **minor**
+     - anything else → **patch**
+2. Runs `npm version` (with `--allow-same-version` on the explicit path), which
+   creates a `chore(release): vX.Y.Z [skip ci]` commit and a matching git tag.
 3. Runs `yarn build` and publishes to npm with dist-tag `latest`.
 4. Builds and pushes a Docker image to AWS ECR (see [Docker image publish](#docker-image-publish-publish-prod)).
 5. Pushes the version commit and tag back to `main`.
 6. Creates a GitHub Release with auto-generated notes.
+7. Triggers the [`sync-develop`](#sync-develop) job to back-merge `main` into
+   `develop` per Gitflow.
+
+> **Why parse only the subject (not the body)?** An earlier iteration of
+> this workflow read `git log -1 --pretty=%B` (full message including body)
+> and grepped for `BREAKING CHANGE`. The auto-generated PR body from
+> `release-stage.yml` contained that exact string as documentation, so every
+> release-stage promotion was misclassified as a major bump and the
+> resulting version was wrong (e.g. `0.0.9` shipped as `1.0.0`). Using
+> `--pretty=%s` constrains the regex to the subject line so the body can't
+> trigger false matches.
+
+#### `sync-develop`
+
+After `publish-prod` succeeds, the `sync-develop` job opens a PR to merge
+`main` back into `develop`. Per Gitflow, every commit on `main` must flow
+back to `develop` so the version bump and any stabilization fixes from the
+release branch (and any hotfixes, when applicable) reach the integration
+branch.
+
+The job:
+
+1. Counts how many commits `main` is ahead of `develop`. If zero (e.g. a
+   manual back-merge already happened), prints a no-op summary and exits.
+2. Creates a `sync/main-to-develop-<version>` branch from `main` using
+   `RELEASE_TOKEN`. The branch name includes the version so retries don't
+   collide and the audit trail shows which release each sync corresponds to.
+3. Opens a PR `sync/main-to-develop-<version>` → `develop` with the default
+   `GITHUB_TOKEN`. Not a draft — this is meant to merge as soon as the
+   operator reviews it.
+4. If a sync branch for this version already exists on origin (e.g. an
+   earlier run failed mid-flight), the job skips branch creation and PR
+   opening, leaving the in-flight sync PR for the operator to resolve.
+
+Merging this PR runs `publish-dev` automatically (since the merge is a push
+to `develop`), so a fresh `dev` prerelease that includes the version bump
+appears under dist-tag `dev` shortly after.
 
 #### Docker image publish (`publish-prod`)
 
@@ -625,12 +668,14 @@ project-level `.npmrc` referencing `${NODE_AUTH_TOKEN}`.
    Subsequent commits to `release/0.1.0` (stabilization fixes from your local
    machine) each republish a new RC under the same `staging` tag.
 4. After staging soak, mark the draft PR as ready, then merge it. Merging
-   triggers `publish-prod`, which bumps the version, tags, and publishes
-   `latest`. To control the bump (minor / major), edit the squash-merge commit
-   title before clicking merge — see the conventional-commit prefixes in the PR
-   body or in [Forcing a specific bump](#forcing-a-specific-bump) below.
-5. Merge `main` back into `develop` so the version bump and any hotfixes flow
-   downstream.
+   triggers `publish-prod`, which publishes **exactly the version you passed
+   to `yarn release-stage`** (parsed from the squash-merge subject pattern
+   `chore(release): X.Y.Z`). If you need to override that version, edit the
+   PR title before clicking merge.
+5. `sync-develop` opens a `sync/main-to-develop-<version>` PR
+   automatically. Review and merge it — that's what closes the Gitflow loop.
+   The merge triggers `publish-dev`, which republishes a fresh `dev`
+   prerelease that includes the version bump.
 
 ### Hotfix
 

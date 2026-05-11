@@ -66,20 +66,18 @@ jobs:
 
           ## Merge behavior
 
-          Merging this PR triggers \`publish-prod\`, which:
-
-          1. Reads the **squash-merge commit message** to choose the semver bump:
-             - \`feat:\` / \`feat(scope):\` → minor
-             - \`feat!:\` / \`BREAKING CHANGE\` → major
-             - anything else → patch
-          2. Runs \`npm version <bump>\`, tags, and publishes to npm under dist-tag \`latest\`.
-          3. Pushes the version commit and tag back to \`main\`.
-
-          To control the prod version bump, edit the squash-merge commit title before merging.
+          Merging this PR triggers the \`publish-prod\` job, which publishes
+          version **${{ inputs.version }}** (the version you passed to
+          \`yarn release-stage\`) to npm under dist-tag \`latest\`. To publish
+          a different version, change this PR's title — \`publish-prod\`
+          parses the version from the squash-merge subject pattern
+          \`chore(release): X.Y.Z\`.
 
           ## After merge
 
-          Remember to merge \`main\` back into \`develop\` so the version bump and any release fixes flow downstream.
+          The \`sync-develop\` job automatically opens a PR to merge \`main\`
+          back into \`develop\` so the version bump and any release fixes
+          flow downstream. Review and merge that PR to close the loop.
           EOF
           )
 
