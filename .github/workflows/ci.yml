@@ -36,11 +36,29 @@ jobs:
       - name: Lint
         run: yarn eslint . --ext .ts,.tsx --max-warnings=0
 
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
+
+      - name: Install Playwright Chromium
+        run: |
+          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = 'true' ]; then
+            npx playwright install-deps chromium
+          else
+            npx playwright install chromium --with-deps
+          fi
+
       - name: Test
         run: yarn vitest run --coverage
 
       - name: Build
         run: yarn build
+
+      - name: Build Storybook
+        run: yarn build:storybook
 
       - name: Upload dist artifact
         uses: actions/upload-artifact@v4

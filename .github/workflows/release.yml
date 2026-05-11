@@ -36,11 +36,29 @@ jobs:
       - name: Lint
         run: yarn eslint . --ext .ts,.tsx --max-warnings=0
 
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
+
+      - name: Install Playwright Chromium
+        run: |
+          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = 'true' ]; then
+            npx playwright install-deps chromium
+          else
+            npx playwright install chromium --with-deps
+          fi
+
       - name: Test
         run: yarn vitest run --coverage
 
       - name: Build
         run: yarn build
+
+      - name: Build Storybook
+        run: yarn build:storybook
 
   publish-dev:
     name: Publish to npm (dev)
@@ -158,22 +176,53 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Determine bump from conventional commit
-        id: bump
+      - name: Resolve target version
+        id: target
         run: |
-          MSG=$(git log -1 --pretty=%B)
-          if echo "$MSG" | grep -qE "BREAKING CHANGE|^[a-z]+(\([^)]+\))?!:"; then
-            echo "bump=major" >> "$GITHUB_OUTPUT"
-          elif echo "$MSG" | grep -qE "^feat(\([^)]+\))?:"; then
-            echo "bump=minor" >> "$GITHUB_OUTPUT"
-          else
-            echo "bump=patch" >> "$GITHUB_OUTPUT"
+          # Read only the SUBJECT (first line) of the merge commit — not the
+          # full body. Previous bug: %B included the PR body, which contains
+          # the strings "BREAKING CHANGE" and "feat!:" as documentation in the
+          # release-stage PR template; grep matched those and triggered a
+          # spurious major bump.
+          SUBJECT=$(git log -1 --pretty=%s)
+          echo "subject=$SUBJECT"
+
+          # Preferred path: the squash-merge subject is "chore(release): X.Y.Z"
+          # (produced by yarn release-stage). Pin the version to X.Y.Z exactly,
+          # bypassing inference. This makes the version the operator typed
+          # into `yarn release-stage <version>` the source of truth.
+          if [[ "$SUBJECT" =~ ^chore\(release\):\ ([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            VERSION="${BASH_REMATCH[1]}"
+            echo "Using explicit version from release PR: $VERSION"
+            echo "explicit_version=$VERSION" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+
+          # Fallback: this is a hotfix or a non-release-stage merge. Infer
+          # bump from the conventional-commit prefix on the SUBJECT only.
+          if echo "$SUBJECT" | grep -qE "^[a-z]+(\([^)]+\))?!:|BREAKING CHANGE"; then
+            BUMP=major
+          elif echo "$SUBJECT" | grep -qE "^feat(\([^)]+\))?:"; then
+            BUMP=minor
+          else
+            BUMP=patch
+          fi
+          echo "No explicit version in subject; falling back to bump=$BUMP"
+          echo "bump=$BUMP" >> "$GITHUB_OUTPUT"
 
       - name: Bump version + tag
         id: version
         run: |
-          NEW=$(npm version ${{ steps.bump.outputs.bump }} -m "chore(release): %s [skip ci]")
+          if [ -n "${{ steps.target.outputs.explicit_version }}" ]; then
+            # --allow-same-version: tolerate the case where package.json is
+            # already at X.Y.Z (e.g. operator pre-bumped on the release branch).
+            NEW=$(npm version "${{ steps.target.outputs.explicit_version }}" \
+              -m "chore(release): %s [skip ci]" \
+              --allow-same-version)
+          else
+            NEW=$(npm version "${{ steps.target.outputs.bump }}" \
+              -m "chore(release): %s [skip ci]")
+          fi
           echo "version=${NEW}" >> "$GITHUB_OUTPUT"
 
       - name: Build
@@ -223,3 +272,98 @@ jobs:
               name: '${{ steps.version.outputs.version }}',
               generate_release_notes: true,
             })
+
+  sync-develop:
+    name: Sync main → develop (back-merge per Gitflow)
+    if: github.ref == 'refs/heads/main'
+    needs: publish-prod
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write       # to push the sync branch
+      pull-requests: write  # to open the back-merge PR
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Need full history to compute the diff between main and develop.
+          fetch-depth: 0
+          # RELEASE_TOKEN so the sync branch push triggers downstream CI on
+          # the resulting PR. GITHUB_TOKEN pushes do not fire `pull_request`
+          # events for branches it created.
+          token: ${{ secrets.RELEASE_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Check whether main is ahead of develop
+        id: diff
+        run: |
+          git fetch origin develop:develop
+          AHEAD=$(git rev-list --count develop..main)
+          echo "main is $AHEAD commits ahead of develop"
+          echo "ahead=$AHEAD" >> "$GITHUB_OUTPUT"
+
+      - name: Create sync branch
+        if: steps.diff.outputs.ahead != '0'
+        id: sync_branch
+        run: |
+          # Branch name includes the version so retries/failures don't collide
+          # with each other and the audit trail shows which release each sync
+          # corresponds to. We read the version from package.json on main
+          # (which has the version-bump commit publish-prod just pushed)
+          # rather than threading outputs between jobs.
+          VERSION=$(node -p "require('./package.json').version")
+          BRANCH="sync/main-to-develop-${VERSION}"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+          # If a sync branch for this version already exists on origin, abort:
+          # an earlier run already opened the PR. The operator should resolve
+          # that one rather than getting a duplicate.
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            echo "Branch $BRANCH already exists on origin — a sync PR is in flight."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git checkout -b "$BRANCH"
+          git push -u origin "$BRANCH"
+
+      - name: Open back-merge PR
+        if: steps.diff.outputs.ahead != '0' && steps.sync_branch.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="${{ steps.sync_branch.outputs.branch }}"
+          VERSION="${{ steps.sync_branch.outputs.version }}"
+          BODY=$(cat <<EOF
+          Automatically opened by \`release.yml\` → \`sync-develop\` after
+          publishing **v${VERSION}** to npm.
+
+          Per Gitflow, every commit on \`main\` must flow back to
+          \`develop\` so:
+
+          - the \`chore(release): vX.Y.Z [skip ci]\` version bump lands on \`develop\`
+          - any stabilization fixes made on the release branch flow downstream
+          - hotfixes (when applicable) reach the integration branch
+
+          ## Merging
+
+          Review the diff, resolve any conflicts on \`$BRANCH\`, then merge.
+          This PR's merge does **not** trigger another publish (no
+          \`release.yml\` job is gated on \`develop\` for prod publishes;
+          \`publish-dev\` will run and emit a fresh \`dev\` prerelease that
+          includes the version bump).
+          EOF
+          )
+
+          gh pr create \
+            --base develop \
+            --head "$BRANCH" \
+            --title "chore(sync): back-merge main → develop (v${VERSION})" \
+            --body "$BODY"
+
+      - name: No-op summary
+        if: steps.diff.outputs.ahead == '0'
+        run: echo "main and develop are in sync (0 commits ahead); nothing to back-merge."

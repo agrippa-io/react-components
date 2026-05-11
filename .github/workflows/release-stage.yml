@@ -42,33 +42,6 @@ jobs:
             exit 1
           fi
 
-      - name: 'Debug: probe token write permission'
-        run: |
-          echo "::group::git remote"
-          git remote -v
-          echo "::endgroup::"
-
-          echo "::group::read check"
-          if git ls-remote --exit-code origin >/dev/null 2>&1; then
-            echo "read: OK"
-          else
-            echo "read: FAIL"
-          fi
-          echo "::endgroup::"
-
-          echo "::group::write probe (push throwaway ref, then delete)"
-          set +e
-          git push origin "HEAD:refs/heads/_perm_check_release_stage" 2>&1
-          PUSH_RC=$?
-          if [ $PUSH_RC -eq 0 ]; then
-            echo "write: OK"
-            git push origin --delete _perm_check_release_stage 2>&1 || true
-          else
-            echo "write: FAIL (exit $PUSH_RC) — see remote: lines above"
-          fi
-          set -e
-          echo "::endgroup::"
-
       - name: Create and push release branch
         run: |
           BRANCH="release/${{ inputs.version }}"
@@ -93,20 +66,18 @@ jobs:
 
           ## Merge behavior
 
-          Merging this PR triggers \`publish-prod\`, which:
-
-          1. Reads the **squash-merge commit message** to choose the semver bump:
-             - \`feat:\` / \`feat(scope):\` → minor
-             - \`feat!:\` / \`BREAKING CHANGE\` → major
-             - anything else → patch
-          2. Runs \`npm version <bump>\`, tags, and publishes to npm under dist-tag \`latest\`.
-          3. Pushes the version commit and tag back to \`main\`.
-
-          To control the prod version bump, edit the squash-merge commit title before merging.
+          Merging this PR triggers the \`publish-prod\` job, which publishes
+          version **${{ inputs.version }}** (the version you passed to
+          \`yarn release-stage\`) to npm under dist-tag \`latest\`. To publish
+          a different version, change this PR's title — \`publish-prod\`
+          parses the version from the squash-merge subject pattern
+          \`chore(release): X.Y.Z\`.
 
           ## After merge
 
-          Remember to merge \`main\` back into \`develop\` so the version bump and any release fixes flow downstream.
+          The \`sync-develop\` job automatically opens a PR to merge \`main\`
+          back into \`develop\` so the version bump and any release fixes
+          flow downstream. Review and merge that PR to close the loop.
           EOF
           )
 

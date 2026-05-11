@@ -1,6 +1,10 @@
 {
   "compilerOptions": {
-    "target": "ES5", // Specifies the JavaScript version to target when transpiling code.
+    // ES2020 covers all evergreen browsers and Node 18+. Targeting ES5 forced
+    // TypeScript to emit polyfilled equivalents of `async/await`, `Map`, `Set`,
+    // optional chaining, etc. — bloat that every modern consumer already has
+    // natively. ES2020 produces a substantially smaller emitted output.
+    "target": "ES2020",
     "useDefineForClassFields": true, // Enables the use of 'define' for class fields.
     "lib": ["ES2020", "DOM", "DOM.Iterable"], // Specifies the libraries available for the code.
     "module": "ESNext", // Defines the module system to use for code generation.

@@ -1,10 +1,5 @@
-import { expect } from 'vitest'
-import * as matchers from '@testing-library/jest-dom/matchers'
-import { TestingLibraryMatchers } from '@testing-library/jest-dom/matchers'
-
-declare module 'vitest' {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  interface Assertion<T = any> extends jest.Matchers<void, T>, TestingLibraryMatchers<T, void> {}
-}
-
-expect.extend(matchers)
+// Single import registers both the jest-dom matchers and the TypeScript
+// module augmentation for Vitest's `expect` (no manual `expect.extend` call,
+// no reference to the deprecated `jest.Matchers` type). This is the
+// jest-dom v6+ Vitest-native setup path.
+import '@testing-library/jest-dom/vitest'

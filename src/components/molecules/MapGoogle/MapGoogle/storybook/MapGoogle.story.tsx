@@ -1,19 +1,22 @@
 import React from 'react'
 
-import { ComponentMeta } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 
 import { IMapGoogleProps } from '../@types'
 import { MapGoogle } from '../MapGoogle'
 import { MapGoogleArgTypes } from './MapGoogle.argTypes'
 import { MapGoogleConfig } from '../../../../../../config'
 
-export default {
+const meta: Meta<typeof MapGoogle> = {
   title: 'Components / molecules / MapGoogle / MapGoogle',
   component: MapGoogle,
   argTypes: MapGoogleArgTypes,
   args: {
     config: MapGoogleConfig,
   },
-} as ComponentMeta<typeof MapGoogle>
+}
+export default meta
 
-export const MapGoogleOverview = (args: IMapGoogleProps) => <MapGoogle {...args} />
+export const MapGoogleOverview: StoryObj<typeof MapGoogle> = {
+  render: (args: IMapGoogleProps) => <MapGoogle {...args} />,
+}
