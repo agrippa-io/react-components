@@ -66,11 +66,10 @@
     "@agrippa-io/storybook-mui-5": "0.0.0-alpha.4",
     "@babel/core": "^7.20.2",
     "@storybook/addon-links": "^9.0.0",
-    "@storybook/addon-webpack5-compiler-swc": "^3.0.0",
+    "@storybook/addon-vitest": "^9.0.0",
     "@storybook/icons": "^1.2.12",
-    "@svgr/webpack": "^8.1.0",
     "@storybook/react": "^9.0.0",
-    "@storybook/react-webpack5": "^9.0.0",
+    "@storybook/react-vite": "^9.0.0",
     "@testing-library/jest-dom": "^5.16.4",
     "@testing-library/react": "^13.0.1",
     "@testing-library/user-event": "^14.1.1",
@@ -88,7 +87,8 @@
     "@typescript-eslint/eslint-plugin": "^6.14.0",
     "@typescript-eslint/parser": "^6.14.0",
     "@vitejs/plugin-react": "^4.2.1",
-    "@vitest/coverage-v8": "^1.1.0",
+    "@vitest/browser": "^3.0.0",
+    "@vitest/coverage-v8": "^3.0.0",
     "eslint": "^8.55.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.0.1",
@@ -104,7 +104,8 @@
     "ts-node": "^10.9.2",
     "vite": "^5.0.8",
     "vite-plugin-dts": "^3.6.4",
-    "vitest": "^1.0.4",
+    "playwright": "^1.50.0",
+    "vitest": "^3.0.0",
     "webpack": "5"
   }
 }

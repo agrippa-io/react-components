@@ -14,15 +14,16 @@ through Storybook, and published as a private package to npm under the
 | ------------ | -------------------------------------------------------------------- |
 | Runtime      | React 18, Material UI 5, React Hook Form                             |
 | State        | Redux Toolkit, react-redux                                           |
-| Tests        | Vitest + React Testing Library                                       |
+| Tests        | Vitest 3 (unit + story smoke tests via `@storybook/addon-vitest` running in real Chromium via Playwright) + React Testing Library |
 | Library build| Vite (`vite build` produces `dist/index.es.js` + `dist/index.cjs.js` + types) |
-| Dev surface  | Storybook 9 (webpack5 builder, SWC compiler addon, `@svgr/webpack`)  |
+| Dev surface  | Storybook 9 with the **Vite builder** (`@storybook/react-vite` + `vite-plugin-svgr`) |
 | Lint/format  | ESLint (flat-extending config) + Prettier (`yarn lint`, `yarn format`)|
 | Hooks        | Husky pre-commit (lint-staged) + pre-push (format + lint)            |
 | Node         | Pinned to `24.x` via `.nvmrc` (use `nvm use` before installing)      |
 
-For why each Storybook piece is there (SWC compiler, svgr, etc.), see the
-"Dev tooling stack" section in [RELEASE.md](./RELEASE.md).
+For why the Vite builder, the `vite-plugin-svgr` config, and the autodocs
+opt-in/out pattern are there, see the "Dev tooling stack" section in
+[RELEASE.md](./RELEASE.md).
 
 ## Releases
 
@@ -83,9 +84,16 @@ nvm use            # reads .nvmrc
 # 3. Install dependencies (Yarn classic v1)
 yarn
 
-# 4. Start Storybook on http://localhost:6006
+# 4. Install Playwright Chromium for story smoke tests (one-time, ~90 MB)
+npx playwright install chromium
+
+# 5. Start Storybook on http://localhost:6006
 yarn start
 ```
+
+> The Playwright install in step 4 is only needed if you'll run `yarn test`
+> — it powers the story smoke tests added by `@storybook/addon-vitest`.
+> Skip it if you only need the Storybook dev server.
 
 ## Local hooks
 

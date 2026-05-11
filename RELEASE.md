@@ -255,8 +255,8 @@ contributing locally:
 | Node      | `24.x` (pinned in `.nvmrc` to `24.0.0`) | Runtime for all yarn scripts and CI jobs |
 | TypeScript| `^5.8`  | Source language (compiled by Vite for the library, by SWC for Storybook) |
 | Vite      | (peer-managed) | Library build: produces `dist/index.es.js` + types     |
-| Vitest    | `^1.x`  | Unit tests (`yarn test` / `vitest related --run` in pre-commit) |
-| Storybook | `^9.0`  | Component playground and documentation surface         |
+| Vitest    | `^3.x`  | Unit tests + story smoke tests via `@storybook/addon-vitest` (`yarn test` runs both projects) |
+| Storybook | `^9.0`  | Component playground (uses the Vite builder via `@storybook/react-vite`) |
 | ESLint    | `^8.55` | Lint + format gate (with prettier integration)         |
 
 ### Node version
@@ -280,11 +280,10 @@ yarn build:storybook      # storybook build (produces storybook-static/)
 
 Configuration lives in `.storybook/`:
 
-- `main.js` — framework (`@storybook/react-webpack5`), addons
-  (`addon-links`, `addon-webpack5-compiler-swc`), TypeScript docgen, static
-  asset directory, and `webpackFinal` for SVG handling via `@svgr/webpack`
-  (CRA-compatible `import { ReactComponent }` shape) plus emotion legacy
-  aliases.
+- `main.js` — framework (`@storybook/react-vite`), addons (`addon-links`),
+  TypeScript docgen, static asset directory, and a `viteFinal` hook that
+  registers `vite-plugin-svgr` for CRA-compatible `import { ReactComponent }`
+  SVG handling and adds the legacy emotion aliases.
 - `preview.js` — global font CSS, `controls` matchers for color/date, and a
   global `tags: ['autodocs']` so every story generates docs by default.
 - `manager.js` — sets the dark theme via `storybook/manager-api`.
@@ -296,43 +295,84 @@ Storybook 9 collapsed most addons into core. The repo previously depended on
 reached via deep imports off the single `storybook` package (e.g.
 `storybook/manager-api`, `storybook/test`).
 
-### Why a SWC compiler addon and `@svgr/webpack`?
+### Why the Vite builder (and not webpack5)?
 
-These two are non-obvious and worth documenting because the symptoms of
-removing either are confusing:
+The repo briefly ran on `@storybook/react-webpack5` as a stepping stone after
+the SB 7 → 9 migration. It now uses `@storybook/react-vite` because:
 
-- **`@storybook/addon-webpack5-compiler-swc`** — Storybook 8+ no longer ships
-  a `babel-loader` by default in the `react-webpack5` framework. Without a
-  compiler addon, every `.tsx` story file fails to parse with `Module parse
-  failed: Unexpected token` on `import type` or JSX. The SWC addon is the
-  recommended choice (faster than babel, less config); babel is also
-  available via `@storybook/addon-webpack5-compiler-babel`.
-- **`@svgr/webpack`** — the source code uses CRA's
-  `import { ReactComponent as Icon } from './foo.svg'` pattern (not just URL
-  imports). CRA wired up `@svgr/webpack` automatically; Storybook does not.
-  Without it, the `ReactComponent` named export resolves to `undefined`,
-  icons render as empty wrappers, and webpack only emits a `WARN export ...
-  was not found` (no hard error). The `webpackFinal` block configures svgr
-  with `exportType: 'named'` + `namedExport: 'ReactComponent'` to match the
-  CRA shape so existing imports work without per-file refactor.
+- **Single build tool across the project.** The library build already uses
+  Vite (`yarn build` → `vite build`), and `vite-plugin-svgr` is already a
+  dependency. Aligning Storybook with the same tool eliminates the
+  webpack/Vite duplication.
+- **~3× faster cold start.** Storybook preview boots in ~1.3s on Vite vs
+  ~4.0s on webpack5 for this codebase.
+- **No compiler addon required.** Vite handles `.ts/.tsx`/JSX natively via
+  esbuild. The `@storybook/addon-webpack5-compiler-swc` addon (and the
+  `@svgr/webpack` loader) that webpack5 needed are gone — fewer moving
+  parts, smaller `node_modules`, less surface area to break in future
+  Storybook majors.
+- **Story files import from the framework package** (`@storybook/react-vite`)
+  to keep the `Meta` / `StoryObj` types aligned with the builder. The
+  `eslint-plugin-storybook` rule `storybook/no-renderer-packages` enforces
+  this.
+
+### Story smoke tests via `@storybook/addon-vitest`
+
+Every story file is automatically a Vitest test. `yarn test` runs two
+parallel Vitest projects (configured under `test.projects` in
+`vite.config.ts`):
+
+| Project   | Source                  | Runner                                | What it covers                                                    |
+| --------- | ----------------------- | ------------------------------------- | ----------------------------------------------------------------- |
+| `unit`    | `src/**/*.test.{ts,tsx}`| jsdom (`./setupTests.ts`)             | 51 existing unit tests for services / utils                       |
+| `storybook` | `src/**/*.story.tsx`  | Real Chromium via Playwright          | 13 smoke tests — one per story; component must mount without throwing. `play()` interactions, when added, are executed and asserted here. |
+
+The storybook project pulls global preview annotations from
+`.storybook/preview.js` via `.storybook/vitest.setup.ts`, so each
+story-as-test runs with the same decorators, parameters, and global tags
+that the Storybook canvas uses. Without that, a story that depends on a
+decorator (e.g. a theme provider) would render bare in the test runner.
+
+**Required setup** before the first test run:
+
+```bash
+npx playwright install chromium     # ~90 MB download, one-time per machine
+```
+
+`yarn test` itself does not auto-install Playwright browsers — CI must run
+`npx playwright install chromium --with-deps` in its setup step (the
+`--with-deps` flag also pulls the system libraries the headless browser
+needs).
+
+**To opt a story out** of the test run (e.g. one that requires an API key
+or has flaky external deps), tag its `meta`:
+
+```tsx
+const meta: Meta<typeof Component> = {
+  title: '...',
+  component: Component,
+  tags: ['!test'],   // SB 9 tag-negation; complements ['!autodocs']
+}
+```
+
+### SVG handling via `vite-plugin-svgr`
+
+The source code uses CRA's `import { ReactComponent as Icon } from
+'./foo.svg'` pattern (not just URL imports). The Vite builder registers
+`vite-plugin-svgr` in `viteFinal` with the same `svgrOptions` as the
+library build (`vite.config.ts`), so dev (Storybook) and prod (published
+library) transform SVGs identically — no surprises when a story works in
+Storybook but the published component doesn't.
 
 ### Story file conventions
 
 All 13 story files use **CSF 3** (object-based) — `Meta` and `StoryObj`
-imported as types from the **framework** package `@storybook/react-webpack5`,
+imported as types from the **framework** package `@storybook/react-vite`,
 not the renderer `@storybook/react`. The `eslint-plugin-storybook@9` rule
 `storybook/no-renderer-packages` enforces this — importing from
 `@storybook/react` triggers a lint error in pre-commit. The framework import
 is also more accurate: it includes any builder-specific extensions to the
 `Meta` / `StoryObj` types and tracks the builder you actually run.
-
-If you migrate the Storybook builder later (e.g. to Vite), one sed handles
-the story-file half of the switch:
-
-```bash
-grep -rl "from '@storybook/react-webpack5'" src | \
-  xargs sed -i '' "s|from '@storybook/react-webpack5'|from '@storybook/react-vite'|g"
-```
 
 CSF 2 (function-based, `ComponentStory<typeof X>`) was removed in
 Storybook 9. New stories should follow the CSF 3 pattern:
