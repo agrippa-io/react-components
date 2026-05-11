@@ -57,6 +57,9 @@ jobs:
       - name: Build
         run: yarn build
 
+      - name: Build Storybook
+        run: yarn build:storybook
+
       - name: Upload dist artifact
         uses: actions/upload-artifact@v4
         with:

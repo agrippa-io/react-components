@@ -88,6 +88,27 @@ const config = {
       }),
     )
 
+    // Chunk the storybook-static build so the main iframe.js doesn't end up
+    // a single >1 MB blob (Vite's default warning threshold is 500 KB).
+    // Splitting the heaviest vendor groups into their own chunks lets the
+    // browser cache them across deploys and parallelizes the initial load.
+    // Applies only to `yarn build:storybook` — `yarn start:storybook` is a
+    // dev server with HMR, no production chunking.
+    config.build = config.build || {}
+    config.build.rollupOptions = config.build.rollupOptions || {}
+    config.build.rollupOptions.output = {
+      ...(config.build.rollupOptions.output || {}),
+      manualChunks: (id) => {
+        if (id.includes('node_modules')) {
+          if (/[\\/]node_modules[\\/]@mui[\\/]/.test(id)) return 'vendor-mui'
+          if (/[\\/]node_modules[\\/]@emotion[\\/]/.test(id)) return 'vendor-emotion'
+          if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return 'vendor-react'
+          if (/[\\/]node_modules[\\/](@reduxjs|react-redux|redux)[\\/]/.test(id)) return 'vendor-redux'
+          if (/[\\/]node_modules[\\/]storybook[\\/]/.test(id)) return 'vendor-storybook'
+        }
+      },
+    }
+
     return config
   },
 }

@@ -244,6 +244,28 @@ prints a `gh run watch` command so the operator can follow the dispatched run.
     component in `EmailSignupWelcome.tsx`. Pinning to 18 keeps types aligned
     with runtime React.
 
+  **Review cadence:** these resolutions are temporary band-aids. Re-evaluate
+  every ~6 months — the underlying packages should update to support newer
+  type versions over time, at which point the resolutions can be removed.
+- A `peerDependencies` block declares consumer-controlled packages
+  (React, React DOM, MUI, Emotion, Redux Toolkit, react-redux,
+  react-hook-form). The Vite library build externalizes these via
+  `rollupOptions.external` in `vite.config.ts`, so the published bundle
+  does not embed its own copies. Without this, consumers risk duplicate
+  React instances ("Invalid hook call"), duplicate MUI theme contexts,
+  and a roughly doubled bundle size.
+
+### Known dependency risks
+
+- **`react-html-email@3.0.0` declares `peerDependencies: react ^16`** but
+  this project runs React 18 (and the page above pins types to React 18).
+  Yarn surfaces this as a peer dep warning on every install. The package
+  is unmaintained — it works in practice because React 18 is
+  backwards-compatible enough for its rendering needs, but any React 19
+  upgrade should treat this as the most likely failure point. Used only by
+  `src/components/templates/email/EmailSignupWelcome/`. Replacement
+  candidate: `@react-email/components`.
+
 ## Dev tooling stack
 
 The dev surface is independent from the published artifact (which is

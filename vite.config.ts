@@ -16,7 +16,25 @@ export default defineConfig({
       formats: ['cjs', 'es'], // Specifies the output formats (CommonJS and ES modules).
     },
     rollupOptions: {
-      // external: [...Object.keys(peerDependencies)], // Defines external dependencies for Rollup bundling.
+      // Externalize consumer-controlled packages so the published library
+      // does not embed its own copies of React / MUI / Emotion / Redux /
+      // react-hook-form. Without this, consumers get duplicate React
+      // instances (causing "Invalid hook call" errors when the host app's
+      // React version differs by even a patch), duplicate MUI theme
+      // contexts, and a ~2 MB unminified bundle.
+      external: [
+        'react',
+        'react-dom',
+        'react/jsx-runtime',
+        'react/jsx-dev-runtime',
+        'react-redux',
+        'react-hook-form',
+        'react-html-email',
+        'react-input-mask',
+        /^@emotion\//,
+        /^@mui\//,
+        /^@reduxjs\//,
+      ],
     },
     sourcemap: true, // Generates source maps for debugging.
     emptyOutDir: true, // Clears the output directory before building.

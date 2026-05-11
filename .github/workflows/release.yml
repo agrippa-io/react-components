@@ -57,6 +57,9 @@ jobs:
       - name: Build
         run: yarn build
 
+      - name: Build Storybook
+        run: yarn build:storybook
+
   publish-dev:
     name: Publish to npm (dev)
     if: github.ref == 'refs/heads/develop'
