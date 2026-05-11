@@ -32,6 +32,8 @@
   },
   "ignorePatterns": [
     "dist",
+    "storybook-static",
+    "coverage",
     ".gitignore"
   ]
 }

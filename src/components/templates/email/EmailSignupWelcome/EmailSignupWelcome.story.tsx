@@ -1,10 +1,10 @@
 import React from 'react'
 
-import { ComponentStory, ComponentMeta } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 
 import { EmailSignupWelcome, EmailSignupWelcomeProps } from './EmailSignupWelcome'
 
-export default {
+const meta: Meta<typeof EmailSignupWelcome> = {
   title: 'Components / templates / email / EmailSignupWelcome',
   component: EmailSignupWelcome,
   args: {
@@ -12,8 +12,9 @@ export default {
     confirmationUrl: '/auth/verify/email',
     userName: 'Vienna',
   },
-} as ComponentMeta<typeof EmailSignupWelcome>
+}
+export default meta
 
-export const EmailSignupWelcomeComponent: ComponentStory<typeof EmailSignupWelcome> = (
-  args: EmailSignupWelcomeProps,
-) => <EmailSignupWelcome {...args} />
+export const EmailSignupWelcomeComponent: StoryObj<typeof EmailSignupWelcome> = {
+  render: (args: EmailSignupWelcomeProps) => <EmailSignupWelcome {...args} />,
+}

@@ -62,17 +62,60 @@ is traceable back to the PR and exact commit it came from. If a push lands on
 
 The `publish-prod` job:
 
-1. Reads the latest commit message and chooses a semver bump using
-   conventional-commit prefixes:
-   - `BREAKING CHANGE` or `<type>!:` → **major**
-   - `feat:` / `feat(scope):` → **minor**
-   - anything else → **patch**
-2. Runs `npm version <bump>`, which creates a `chore(release): vX.Y.Z [skip ci]`
-   commit and a matching git tag.
+1. **Resolves the target version** from the merge-commit *subject* (first
+   line only — never the body):
+   - If the subject matches `chore(release): X.Y.Z` (the default title from
+     `yarn release-stage`), publishes **exactly that version**. This makes
+     the version operators type into `yarn release-stage <version>` the
+     binding source of truth.
+   - Otherwise (e.g. a hotfix merged directly to `main`), falls back to a
+     bump inferred from the conventional-commit prefix on the subject:
+     - `<type>!:` or `BREAKING CHANGE` → **major**
+     - `feat:` / `feat(scope):` → **minor**
+     - anything else → **patch**
+2. Runs `npm version` (with `--allow-same-version` on the explicit path), which
+   creates a `chore(release): vX.Y.Z [skip ci]` commit and a matching git tag.
 3. Runs `yarn build` and publishes to npm with dist-tag `latest`.
 4. Builds and pushes a Docker image to AWS ECR (see [Docker image publish](#docker-image-publish-publish-prod)).
 5. Pushes the version commit and tag back to `main`.
 6. Creates a GitHub Release with auto-generated notes.
+7. Triggers the [`sync-develop`](#sync-develop) job to back-merge `main` into
+   `develop` per Gitflow.
+
+> **Why parse only the subject (not the body)?** An earlier iteration of
+> this workflow read `git log -1 --pretty=%B` (full message including body)
+> and grepped for `BREAKING CHANGE`. The auto-generated PR body from
+> `release-stage.yml` contained that exact string as documentation, so every
+> release-stage promotion was misclassified as a major bump and the
+> resulting version was wrong (e.g. `0.0.9` shipped as `1.0.0`). Using
+> `--pretty=%s` constrains the regex to the subject line so the body can't
+> trigger false matches.
+
+#### `sync-develop`
+
+After `publish-prod` succeeds, the `sync-develop` job opens a PR to merge
+`main` back into `develop`. Per Gitflow, every commit on `main` must flow
+back to `develop` so the version bump and any stabilization fixes from the
+release branch (and any hotfixes, when applicable) reach the integration
+branch.
+
+The job:
+
+1. Counts how many commits `main` is ahead of `develop`. If zero (e.g. a
+   manual back-merge already happened), prints a no-op summary and exits.
+2. Creates a `sync/main-to-develop-<version>` branch from `main` using
+   `RELEASE_TOKEN`. The branch name includes the version so retries don't
+   collide and the audit trail shows which release each sync corresponds to.
+3. Opens a PR `sync/main-to-develop-<version>` → `develop` with the default
+   `GITHUB_TOKEN`. Not a draft — this is meant to merge as soon as the
+   operator reviews it.
+4. If a sync branch for this version already exists on origin (e.g. an
+   earlier run failed mid-flight), the job skips branch creation and PR
+   opening, leaving the in-flight sync PR for the operator to resolve.
+
+Merging this PR runs `publish-dev` automatically (since the merge is a push
+to `develop`), so a fresh `dev` prerelease that includes the version bump
+appears under dist-tag `dev` shortly after.
 
 #### Docker image publish (`publish-prod`)
 
@@ -227,6 +270,243 @@ prints a `gh run watch` command so the operator can follow the dispatched run.
 - `"prepublishOnly": "yarn build"` — `npm publish` always rebuilds from source,
   so the published package cannot drift from the committed source.
 - `dist/` is `.gitignore`'d — built locally and in CI, never committed.
+- Scripts are organized by purpose. The library build is **Vite**
+  (`yarn build` → `tsc -p tsconfig.prod.json && vite build`); Storybook is the
+  development surface (`yarn start` → `yarn start:storybook`); tests are
+  **Vitest** (`yarn test`). Legacy CRA scripts (`*:app`) and `react-scripts`
+  itself were removed — the project never used CRA at runtime; those scripts
+  were vestigial scaffolding.
+- A `resolutions` block pins three transitive type packages:
+  - `@types/minimatch: 5.1.2` — overrides the deprecated `@types/minimatch@6`
+    stub (no `.d.ts` files, breaks the prod `tsc` compile with TS2688).
+  - `@types/react: ^18.3.28` and `@types/react-dom: ^18.3.0` — three
+    transitive packages (`@types/google-map-react`, `@types/react-html-email`,
+    `@types/react-input-mask`) pull in `@types/react@19`, which conflicts
+    with the project's React 18 runtime and surfaces as
+    "Type 'bigint' is not assignable to type 'ReactNode'" on every JSX
+    component in `EmailSignupWelcome.tsx`. Pinning to 18 keeps types aligned
+    with runtime React.
+
+  **Review cadence:** these resolutions are temporary band-aids. Re-evaluate
+  every ~6 months — the underlying packages should update to support newer
+  type versions over time, at which point the resolutions can be removed.
+- A `peerDependencies` block declares consumer-controlled packages
+  (React, React DOM, MUI, Emotion, Redux Toolkit, react-redux,
+  react-hook-form). The Vite library build externalizes these via
+  `rollupOptions.external` in `vite.config.ts`, so the published bundle
+  does not embed its own copies. Without this, consumers risk duplicate
+  React instances ("Invalid hook call"), duplicate MUI theme contexts,
+  and a roughly doubled bundle size.
+
+### Known dependency risks
+
+- **`react-html-email@3.0.0` declares `peerDependencies: react ^16`** but
+  this project runs React 18 (and the page above pins types to React 18).
+  Yarn surfaces this as a peer dep warning on every install. The package
+  is unmaintained — it works in practice because React 18 is
+  backwards-compatible enough for its rendering needs, but any React 19
+  upgrade should treat this as the most likely failure point. Used only by
+  `src/components/templates/email/EmailSignupWelcome/`. Replacement
+  candidate: `@react-email/components`.
+
+## Dev tooling stack
+
+The dev surface is independent from the published artifact (which is
+Vite-built `dist/` shipped to npm), but matters for CI parity and for anyone
+contributing locally:
+
+| Tool      | Version | Purpose                                                |
+| --------- | ------- | ------------------------------------------------------ |
+| Node      | `24.x` (pinned in `.nvmrc` to `24.0.0`) | Runtime for all yarn scripts and CI jobs |
+| TypeScript| `^5.8`  | Source language (compiled by Vite for the library, by SWC for Storybook) |
+| Vite      | (peer-managed) | Library build: produces `dist/index.es.js` + types     |
+| Vitest    | `^3.x`  | Unit tests + story smoke tests via `@storybook/addon-vitest` (`yarn test` runs both projects) |
+| Storybook | `^9.0`  | Component playground (uses the Vite builder via `@storybook/react-vite`) |
+| ESLint    | `^8.55` | Lint + format gate (with prettier integration)         |
+
+### Node version
+
+`.nvmrc` is the source of truth (`24.0.0`). All CI jobs use
+`actions/setup-node@v4` with `node-version-file: '.nvmrc'`, so a single bump
+of `.nvmrc` propagates to every workflow. The `Dockerfile` base image is
+pinned to `FROM node:24` (major-only) to track the latest 24.x LTS minor
+without a code change.
+
+### Storybook 9
+
+Storybook is a developer-only dependency — it is never bundled into the
+published package. The relevant scripts:
+
+```bash
+yarn start                # alias for start:storybook
+yarn start:storybook      # storybook dev -p 6006
+yarn build:storybook      # storybook build (produces storybook-static/)
+```
+
+Configuration lives in `.storybook/`:
+
+- `main.js` — framework (`@storybook/react-vite`), addons (`addon-links`),
+  TypeScript docgen, static asset directory, and a `viteFinal` hook that
+  registers `vite-plugin-svgr` for CRA-compatible `import { ReactComponent }`
+  SVG handling and adds the legacy emotion aliases.
+- `preview.js` — global font CSS, `controls` matchers for color/date, and a
+  global `tags: ['autodocs']` so every story generates docs by default.
+- `manager.js` — sets the dark theme via `storybook/manager-api`.
+
+Storybook 9 collapsed most addons into core. The repo previously depended on
+`@storybook/addon-essentials`, `@storybook/addon-interactions`,
+`@storybook/manager-api`, `@storybook/preview-api`, `@storybook/test`, and
+`@storybook/theming` as separate packages — these are gone. Their APIs are
+reached via deep imports off the single `storybook` package (e.g.
+`storybook/manager-api`, `storybook/test`).
+
+### Why the Vite builder (and not webpack5)?
+
+The repo briefly ran on `@storybook/react-webpack5` as a stepping stone after
+the SB 7 → 9 migration. It now uses `@storybook/react-vite` because:
+
+- **Single build tool across the project.** The library build already uses
+  Vite (`yarn build` → `vite build`), and `vite-plugin-svgr` is already a
+  dependency. Aligning Storybook with the same tool eliminates the
+  webpack/Vite duplication.
+- **~3× faster cold start.** Storybook preview boots in ~1.3s on Vite vs
+  ~4.0s on webpack5 for this codebase.
+- **No compiler addon required.** Vite handles `.ts/.tsx`/JSX natively via
+  esbuild. The `@storybook/addon-webpack5-compiler-swc` addon (and the
+  `@svgr/webpack` loader) that webpack5 needed are gone — fewer moving
+  parts, smaller `node_modules`, less surface area to break in future
+  Storybook majors.
+- **Story files import from the framework package** (`@storybook/react-vite`)
+  to keep the `Meta` / `StoryObj` types aligned with the builder. The
+  `eslint-plugin-storybook` rule `storybook/no-renderer-packages` enforces
+  this.
+
+### Story smoke tests via `@storybook/addon-vitest`
+
+Every story file is automatically a Vitest test. `yarn test` runs two
+parallel Vitest projects (configured under `test.projects` in
+`vite.config.ts`):
+
+| Project   | Source                  | Runner                                | What it covers                                                    |
+| --------- | ----------------------- | ------------------------------------- | ----------------------------------------------------------------- |
+| `unit`    | `src/**/*.test.{ts,tsx}`| jsdom (`./setupTests.ts`)             | 51 existing unit tests for services / utils                       |
+| `storybook` | `src/**/*.story.tsx`  | Real Chromium via Playwright          | 13 smoke tests — one per story; component must mount without throwing. `play()` interactions, when added, are executed and asserted here. |
+
+The storybook project pulls global preview annotations from
+`.storybook/preview.js` via `.storybook/vitest.setup.ts`, so each
+story-as-test runs with the same decorators, parameters, and global tags
+that the Storybook canvas uses. Without that, a story that depends on a
+decorator (e.g. a theme provider) would render bare in the test runner.
+
+**Required setup** before the first test run:
+
+```bash
+npx playwright install chromium     # ~90 MB download, one-time per machine
+```
+
+`yarn test` itself does not auto-install Playwright browsers — CI must run
+`npx playwright install chromium --with-deps` in its setup step (the
+`--with-deps` flag also pulls the system libraries the headless browser
+needs).
+
+**To opt a story out** of the test run (e.g. one that requires an API key
+or has flaky external deps), tag its `meta`:
+
+```tsx
+const meta: Meta<typeof Component> = {
+  title: '...',
+  component: Component,
+  tags: ['!test'],   // SB 9 tag-negation; complements ['!autodocs']
+}
+```
+
+### SVG handling via `vite-plugin-svgr`
+
+The source code uses CRA's `import { ReactComponent as Icon } from
+'./foo.svg'` pattern (not just URL imports). The Vite builder registers
+`vite-plugin-svgr` in `viteFinal` with the same `svgrOptions` as the
+library build (`vite.config.ts`), so dev (Storybook) and prod (published
+library) transform SVGs identically — no surprises when a story works in
+Storybook but the published component doesn't.
+
+### Story file conventions
+
+All 13 story files use **CSF 3** (object-based) — `Meta` and `StoryObj`
+imported as types from the **framework** package `@storybook/react-vite`,
+not the renderer `@storybook/react`. The `eslint-plugin-storybook@9` rule
+`storybook/no-renderer-packages` enforces this — importing from
+`@storybook/react` triggers a lint error in pre-commit. The framework import
+is also more accurate: it includes any builder-specific extensions to the
+`Meta` / `StoryObj` types and tracks the builder you actually run.
+
+CSF 2 (function-based, `ComponentStory<typeof X>`) was removed in
+Storybook 9. New stories should follow the CSF 3 pattern:
+
+```tsx
+import type { Meta, StoryObj } from '@storybook/react-webpack5'
+import { Component } from './Component'
+
+const meta: Meta<typeof Component> = {
+  title: 'Components / atoms / Component',
+  component: Component,
+  argTypes: {
+    /* ... */
+  },
+}
+export default meta
+
+export const Default: StoryObj<typeof Component> = {
+  args: {
+    /* default props */
+  },
+  // Custom render only when needed (e.g. wrapping in providers):
+  // render: (args) => <FormProvider><Component {...args} /></FormProvider>,
+}
+```
+
+### Autodocs (opt-in by default, opt-out per story)
+
+Autodocs generates a Docs tab for every story that includes the `autodocs`
+tag. The original Storybook 7 setup used `docs.autodocs: true` (every story
+gets a Docs page); Storybook 9 removed that field, so the equivalent is set
+**globally** in `.storybook/preview.js`:
+
+```js
+// .storybook/preview.js
+const preview = {
+  parameters: { /* ... */ },
+  tags: ['autodocs'],   // <-- every story opts in by default
+}
+```
+
+This preserves the original "all stories have docs" behavior with one
+change in one file, instead of touching every meta.
+
+**To opt a single story out**, add `tags: ['!autodocs']` on its `meta`:
+
+```tsx
+const meta: Meta<typeof Component> = {
+  title: '...',
+  component: Component,
+  tags: ['!autodocs'],   // overrides the global opt-in for this story only
+}
+```
+
+The leading `!` is Storybook 9's tag-negation syntax — it removes a tag
+that would otherwise be inherited from the global `preview.js` tags.
+
+**When to opt out**: the autodocs Docs tab assumes the story's render is a
+representative single instance of `meta.component` driven by `args`. Opt
+out for stories where that assumption breaks — e.g.
+
+- Showcase grids that render many static instances regardless of `args`
+  (the Controls table would only drive a subset of what's on screen).
+- Stories that intentionally don't follow the single-component pattern
+  (e.g. multi-component layout demos).
+
+Currently only `IconCreditCardLogo.story.tsx` opts out — its render shows
+every `iconStyle × company` combination in a static grid, so the Docs page
+is misleading. The other 12 story files inherit the global opt-in.
 
 ## Required configuration
 
@@ -388,12 +668,14 @@ project-level `.npmrc` referencing `${NODE_AUTH_TOKEN}`.
    Subsequent commits to `release/0.1.0` (stabilization fixes from your local
    machine) each republish a new RC under the same `staging` tag.
 4. After staging soak, mark the draft PR as ready, then merge it. Merging
-   triggers `publish-prod`, which bumps the version, tags, and publishes
-   `latest`. To control the bump (minor / major), edit the squash-merge commit
-   title before clicking merge — see the conventional-commit prefixes in the PR
-   body or in [Forcing a specific bump](#forcing-a-specific-bump) below.
-5. Merge `main` back into `develop` so the version bump and any hotfixes flow
-   downstream.
+   triggers `publish-prod`, which publishes **exactly the version you passed
+   to `yarn release-stage`** (parsed from the squash-merge subject pattern
+   `chore(release): X.Y.Z`). If you need to override that version, edit the
+   PR title before clicking merge.
+5. `sync-develop` opens a `sync/main-to-develop-<version>` PR
+   automatically. Review and merge it — that's what closes the Gitflow loop.
+   The merge triggers `publish-dev`, which republishes a fresh `dev`
+   prerelease that includes the version bump.
 
 ### Hotfix
 

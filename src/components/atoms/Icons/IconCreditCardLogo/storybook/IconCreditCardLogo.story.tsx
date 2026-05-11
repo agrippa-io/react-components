@@ -1,12 +1,12 @@
 import React from 'react'
 
-import { ComponentMeta } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 
 import { Box, Typography, Tooltip } from '@mui/material'
 import { IconCreditCardLogo, IIconCreditCardLogoProps } from '../IconCreditCardLogo'
 import { IconCreditCardStyleMap, IconCreditCardStyle, IconCreditCardCompany } from '../constants'
 
-export default {
+const meta: Meta<typeof IconCreditCardLogo> = {
   title: 'Components / atoms / Icon / IconCreditCardLogo',
   component: IconCreditCardLogo,
   // argTypes: IconCreditCardLogoArgTypes,
@@ -16,7 +16,15 @@ export default {
     iconStyle: 'flat-rounded',
     company: 'amex',
   },
-} as ComponentMeta<typeof IconCreditCardLogo>
+  // Opt out of the global `autodocs` (set in .storybook/preview.js): the
+  // story's render is a showcase grid of every iconStyle × company
+  // combination, so the auto-generated docs page would expose Controls that
+  // only drive the small "active" icon at top while the static grid below
+  // ignores them — confusing for anyone landing on the Docs tab. Use the
+  // Canvas tab to see this story.
+  tags: ['!autodocs'],
+}
+export default meta
 
 function renderIconCreditCardLogoStyles() {
   return Object.keys(IconCreditCardStyleMap).map((iconStyle) => (
@@ -79,20 +87,22 @@ function renderTooltipTitle(iconStyle: string, company: string) {
   )
 }
 
-export const FieldAutocompleteOverview = (args: IIconCreditCardLogoProps) => (
-  <Box sx={{ width: '100%' }}>
-    <Box
-      sx={{
-        backgroundColor: '#CCCCCC',
-        display: 'flex',
-        justifyContent: 'center',
-        padding: '20px',
-      }}
-    >
-      <Tooltip title={renderTooltipTitle(args.iconStyle, args.company)}>
-        <IconCreditCardLogo {...args} />
-      </Tooltip>
+export const FieldAutocompleteOverview: StoryObj<typeof IconCreditCardLogo> = {
+  render: (args: IIconCreditCardLogoProps) => (
+    <Box sx={{ width: '100%' }}>
+      <Box
+        sx={{
+          backgroundColor: '#CCCCCC',
+          display: 'flex',
+          justifyContent: 'center',
+          padding: '20px',
+        }}
+      >
+        <Tooltip title={renderTooltipTitle(args.iconStyle, args.company)}>
+          <IconCreditCardLogo {...args} />
+        </Tooltip>
+      </Box>
+      <Box sx={{ overflowX: 'scroll' }}>{renderIconCreditCardLogoStyles()}</Box>
     </Box>
-    <Box sx={{ overflowX: 'scroll' }}>{renderIconCreditCardLogoStyles()}</Box>
-  </Box>
-)
+  ),
+}
