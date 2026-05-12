@@ -1,0 +1,99 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  GitHub Actions OIDC trust + IAM role used by the `release.yml` workflow in
+  agrippa-io/react-components to push the Storybook Docker image to ECR.
+
+  Trust policy is scoped to `repo:agrippa-io/react-components:*` (any ref /
+  any environment). Tighten the `sub` condition if you need to restrict to
+  the `prod` environment or `main` branch only.
+
+Parameters:
+  CreateOIDCProvider:
+    Type: String
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+    Description: >
+      Set to 'false' if the GitHub OIDC provider already exists in this
+      account (only one per account is allowed). Run
+      `aws iam list-open-id-connect-providers` to check.
+
+  GitHubOrg:
+    Type: String
+    Default: agrippa-io
+
+  GitHubRepo:
+    Type: String
+    Default: react-components
+
+  EcrRepositoryName:
+    Type: String
+    Default: agrippa-dev/react-components
+    Description: ECR repository the role is allowed to push to.
+
+  RoleName:
+    Type: String
+    Default: gha-react-components-ecr-publisher
+
+Conditions:
+  ShouldCreateOIDCProvider: !Equals [!Ref CreateOIDCProvider, 'true']
+
+Resources:
+  GitHubOIDCProvider:
+    Type: AWS::IAM::OIDCProvider
+    Condition: ShouldCreateOIDCProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+        - sts.amazonaws.com
+      # AWS validates GitHub's certificate chain internally; these thumbprints
+      # are the documented values and are no longer authoritatively checked,
+      # but the field is still required by the resource schema.
+      ThumbprintList:
+        - 6938fd4d98bab03faadb97b34396831e3780aea1
+        - 1c58a3a8518e8759bf075b76b750d4f2df264fcd
+
+  EcrPublisherRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref RoleName
+      Description: >
+        Assumed via OIDC by GitHub Actions in agrippa-io/react-components to
+        publish the Storybook image to ECR.
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Sub arn:aws:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+              StringLike:
+                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubOrg}/${GitHubRepo}:*
+      Policies:
+        - PolicyName: EcrPushReactComponents
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: EcrAuth
+                Effect: Allow
+                Action: ecr:GetAuthorizationToken
+                Resource: '*'
+              - Sid: EcrPushPull
+                Effect: Allow
+                Action:
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:BatchGetImage
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:InitiateLayerUpload
+                  - ecr:UploadLayerPart
+                  - ecr:CompleteLayerUpload
+                  - ecr:PutImage
+                Resource: !Sub arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/${EcrRepositoryName}
+
+Outputs:
+  RoleArn:
+    Description: Paste this into the `AWS_DEPLOY_ROLE_ARN` secret in the `prod` GitHub environment.
+    Value: !GetAtt EcrPublisherRole.Arn
