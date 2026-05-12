@@ -30,7 +30,11 @@ const config = {
   // addon-vitest runs every story as a Vitest test (smoke test by default,
   // plus any `play()` interaction blocks). Vitest config + browser setup
   // live in `vitest.config.ts` and `.storybook/vitest.setup.ts`.
-  addons: ['@storybook/addon-links', '@storybook/addon-vitest'],
+  addons: [
+    '@storybook/addon-links',
+    '@storybook/addon-vitest',
+    '@storybook/addon-mcp'
+  ],
 
   // Autodocs is now driven by `tags: ['autodocs']` declared globally in
   // preview.js. The previous `docs.autodocs: true` field is deprecated in
@@ -73,6 +77,15 @@ const config = {
       src: path.resolve(projectRoot, 'src'),
       '@emotion/core': path.resolve(projectRoot, 'node_modules/@emotion/react'),
       'emotion-theming': path.resolve(projectRoot, 'node_modules/@emotion/react'),
+      // @faire/mjml-react's render() does require('mjml'), but the mjml
+      // package is Node-only (fs, fetch, etc.). Re-point it at mjml-browser
+      // so email templates can be compiled inside the Storybook iframe.
+      mjml: path.resolve(projectRoot, 'node_modules/mjml-browser'),
+      // @faire/mjml-react/utils/renderToMjml uses react-dom/server's
+      // renderToStaticMarkup. Vite resolves the bare "react-dom/server"
+      // specifier to server.node.js (which pulls in `stream`, `os`, etc.).
+      // Pin it to the browser build that React 18+ ships for this exact case.
+      'react-dom/server': path.resolve(projectRoot, 'node_modules/react-dom/server.browser.js'),
     }
 
     config.plugins = config.plugins || []

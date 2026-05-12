@@ -1,7 +1,8 @@
 import React, { ComponentType } from 'react'
 
-import { renderEmail } from 'react-html-email'
+import { render } from '@faire/mjml-react/utils/render'
 
-export const renderReactEmail = (Component: ComponentType<any>, data: any) => {
-  return renderEmail(<Component {...data} />)
+export const renderReactEmail = (Component: ComponentType<any>, data: any): string => {
+  const { html } = render(<Component {...data} />)
+  return html
 }

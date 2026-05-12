@@ -4,7 +4,7 @@ import '@fontsource/roboto/500.css'
 import '@fontsource/roboto/700.css'
 import '@fontsource/material-icons'
 
-/** @type {import('@storybook/react').Preview} */
+/** @type {import('@storybook/react-vite').Preview} */
 const preview = {
   parameters: {
     // Note: SB 7's `actions: { argTypesRegex: '^on[A-Z].*' }` was removed —
