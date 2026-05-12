@@ -151,13 +151,10 @@ jobs:
     runs-on: ubuntu-latest
     environment: prod
     permissions:
-      contents: write    # Required to create GitHub releases (push uses RELEASE_TOKEN via checkout)
+      contents: write    # Required to create the GitHub release (and the tag it creates)
       id-token: write    # Required for OIDC/Trusted Publishing to npm
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.RELEASE_TOKEN }}
 
       - uses: actions/setup-node@v4
         with:
@@ -171,59 +168,18 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: yarn install --frozen-lockfile
 
-      - name: Configure git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-      - name: Resolve target version
-        id: target
-        run: |
-          # Read only the SUBJECT (first line) of the merge commit — not the
-          # full body. Previous bug: %B included the PR body, which contains
-          # the strings "BREAKING CHANGE" and "feat!:" as documentation in the
-          # release-stage PR template; grep matched those and triggered a
-          # spurious major bump.
-          SUBJECT=$(git log -1 --pretty=%s)
-          echo "subject=$SUBJECT"
-
-          # Preferred path: the squash-merge subject is "chore(release): X.Y.Z"
-          # (produced by yarn release-stage). Pin the version to X.Y.Z exactly,
-          # bypassing inference. This makes the version the operator typed
-          # into `yarn release-stage <version>` the source of truth.
-          if [[ "$SUBJECT" =~ ^chore\(release\):\ ([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
-            VERSION="${BASH_REMATCH[1]}"
-            echo "Using explicit version from release PR: $VERSION"
-            echo "explicit_version=$VERSION" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          # Fallback: this is a hotfix or a non-release-stage merge. Infer
-          # bump from the conventional-commit prefix on the SUBJECT only.
-          if echo "$SUBJECT" | grep -qE "^[a-z]+(\([^)]+\))?!:|BREAKING CHANGE"; then
-            BUMP=major
-          elif echo "$SUBJECT" | grep -qE "^feat(\([^)]+\))?:"; then
-            BUMP=minor
-          else
-            BUMP=patch
-          fi
-          echo "No explicit version in subject; falling back to bump=$BUMP"
-          echo "bump=$BUMP" >> "$GITHUB_OUTPUT"
-
-      - name: Bump version + tag
+      - name: Resolve published version
         id: version
         run: |
-          if [ -n "${{ steps.target.outputs.explicit_version }}" ]; then
-            # --allow-same-version: tolerate the case where package.json is
-            # already at X.Y.Z (e.g. operator pre-bumped on the release branch).
-            NEW=$(npm version "${{ steps.target.outputs.explicit_version }}" \
-              -m "chore(release): %s [skip ci]" \
-              --allow-same-version)
-          else
-            NEW=$(npm version "${{ steps.target.outputs.bump }}" \
-              -m "chore(release): %s [skip ci]")
-          fi
-          echo "version=${NEW}" >> "$GITHUB_OUTPUT"
+          # The version was committed to package.json on the release branch
+          # by release-stage.yml (or to a hotfix branch by the operator) and
+          # arrived on main via the squash-merge of this PR. publish-prod
+          # just reads it — no bumping, no parsing the merge subject, no
+          # pushing back to main.
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Publishing version: ${VERSION}"
 
       - name: Build
         run: yarn build
@@ -246,7 +202,7 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ vars.URL_DOCKER_REGISTRY }}:${{ steps.version.outputs.version }}
+            ${{ vars.URL_DOCKER_REGISTRY }}:${{ steps.version.outputs.tag }}
             ${{ vars.URL_DOCKER_REGISTRY }}:latest
           secrets: |
             npm_token=${{ secrets.NPM_TOKEN }}
@@ -258,18 +214,21 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --tag latest --access restricted
 
-      - name: Push commit + tag
-        run: git push --follow-tags origin main
-
-      - name: Create GitHub release
+      - name: Create GitHub release and tag
         uses: actions/github-script@v7
         with:
           script: |
+            // createRelease creates the tag remotely (no direct git push to
+            // main needed). target_commitish pins the tag at the exact merge
+            // commit that triggered this run rather than the default branch's
+            // current HEAD — important if another commit lands on main while
+            // this job runs.
             await github.rest.repos.createRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              tag_name: '${{ steps.version.outputs.version }}',
-              name: '${{ steps.version.outputs.version }}',
+              tag_name: '${{ steps.version.outputs.tag }}',
+              name: '${{ steps.version.outputs.tag }}',
+              target_commitish: context.sha,
               generate_release_notes: true,
             })
 
