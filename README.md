@@ -71,6 +71,42 @@ primitives. Useful references:
 Storybook serves as both the component playground and the visual diff surface
 for theming changes.
 
+### Email templates (MJML)
+
+Email templates under `src/components/templates/email/**` are authored as
+React components using [MJML](https://mjml.io/) — a markup language that
+compiles to email-safe, responsive HTML and handles the cross-client quirks
+(Outlook desktop conditional comments, hybrid responsive layouts, dark-mode
+media queries, etc.) that hand-rolled HTML emails get wrong. The library used
+is [`@faire/mjml-react`](https://github.com/Faire/mjml-react), which exposes
+MJML tags as React components.
+
+Useful references:
+
+- [MJML documentation](https://documentation.mjml.io/) — component reference
+  (`mj-section`, `mj-column`, `mj-text`, `mj-button`, …) and attribute list.
+- [MJML online editor (`mjml.io/try-it-live`)](https://mjml.io/try-it-live) —
+  paste raw MJML and see the compiled HTML, useful for prototyping a layout
+  before porting it into JSX.
+- [`@faire/mjml-react` README](https://github.com/Faire/mjml-react#readme) —
+  the JSX-to-MJML mapping (each `<MjmlSection>` becomes `<mj-section>`, etc.)
+  and the `render()` / `renderToMjml()` helpers.
+
+**Rendering paths.** The compile step has two flavors:
+
+| Context              | API                                                       |
+| -------------------- | --------------------------------------------------------- |
+| Node (sending email) | `@agrippa-io/react-components`'s `renderReactEmail` util → `@faire/mjml-react`'s `render()` (synchronous, uses the Node `mjml` package internally) |
+| Browser (Storybook)  | `renderToMjml()` → `mjml-browser` (default export is **async** — `await` the Promise) |
+
+The split exists because `@faire/mjml-react`'s `render` transitively imports
+`html-minifier` → `clean-css`, which references Node globals (`process`,
+`os.EOL`) and won't run in the browser. Stories sidestep this by composing
+`renderToMjml` with `mjml-browser` and rendering the compiled HTML inside an
+`<iframe srcDoc={...}>` for a true visual preview. `EmailSignupWelcome.story.tsx`
+is the reference implementation; copy its `EmailPreview` shape for new email
+stories.
+
 ## Getting started
 
 ```bash
@@ -171,6 +207,10 @@ publish, so you do not need to commit the build output.
 - [React](https://react.dev/) — runtime
 - [Material UI](https://mui.com/) — design system base
 - [React Hook Form](https://react-hook-form.com/) — form library
+- [MJML](https://mjml.io/) — email markup framework
+  ([docs](https://documentation.mjml.io/),
+  [try-it-live](https://mjml.io/try-it-live),
+  [`@faire/mjml-react`](https://github.com/Faire/mjml-react))
 - [Storybook 9](https://storybook.js.org/docs/get-started) — dev/preview surface
 - [Vitest](https://vitest.dev/) — test runner
 - [Vite](https://vitejs.dev/) — library build tool
