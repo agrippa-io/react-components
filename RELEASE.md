@@ -52,7 +52,7 @@ same `validate` job as CI before any publish job runs.
 | -------------------- | ---------------- | -------------------------------------- | --------- | ----------- |
 | push to `develop`    | `publish-dev`    | `x.y.z-dev.<pr-number>.<short-sha>`    | `dev`     | `dev`       |
 | push to `release/**` | `publish-staging`| `x.y.z-rc.<run_number>`                | `staging` | `staging`   |
-| push to `main`       | `publish-prod`   | `x.y.(z+1)` (or minor / major)         | `latest`  | `prod`      |
+| push to `main`       | `publish-prod`   | `x.y.z` (read from `package.json`)     | `latest`  | `prod`      |
 
 The `publish-dev` job resolves the PR number and merge-commit short SHA from the
 GitHub API (`repos.listPullRequestsAssociatedWithCommit`) so each dev prerelease
@@ -62,34 +62,32 @@ is traceable back to the PR and exact commit it came from. If a push lands on
 
 The `publish-prod` job:
 
-1. **Resolves the target version** from the merge-commit *subject* (first
-   line only — never the body):
-   - If the subject matches `chore(release): X.Y.Z` (the default title from
-     `yarn release-stage`), publishes **exactly that version**. This makes
-     the version operators type into `yarn release-stage <version>` the
-     binding source of truth.
-   - Otherwise (e.g. a hotfix merged directly to `main`), falls back to a
-     bump inferred from the conventional-commit prefix on the subject:
-     - `<type>!:` or `BREAKING CHANGE` → **major**
-     - `feat:` / `feat(scope):` → **minor**
-     - anything else → **patch**
-2. Runs `npm version` (with `--allow-same-version` on the explicit path), which
-   creates a `chore(release): vX.Y.Z [skip ci]` commit and a matching git tag.
-3. Runs `yarn build` and publishes to npm with dist-tag `latest`.
-4. Builds and pushes a Docker image to AWS ECR (see [Docker image publish](#docker-image-publish-publish-prod)).
-5. Pushes the version commit and tag back to `main`.
-6. Creates a GitHub Release with auto-generated notes.
-7. Triggers the [`sync-develop`](#sync-develop) job to back-merge `main` into
+1. **Reads the version directly from `package.json`** — the bump was
+   committed to the release branch by `release-stage.yml` (or by the
+   operator on a hotfix branch) and arrived on `main` as part of the
+   squash-merge. No inference from the merge-commit subject, no
+   `npm version`, no parsing the PR title.
+2. Runs `yarn build` and publishes to npm with dist-tag `latest`.
+3. Builds and pushes a Docker image to AWS ECR (see [Docker image publish](#docker-image-publish-publish-prod)).
+4. Creates a GitHub Release with auto-generated notes — `repos.createRelease`
+   creates the matching `vX.Y.Z` tag remotely (no `git push --follow-tags`
+   to `main`), pinned to the merge commit via `target_commitish: context.sha`.
+5. Triggers the [`sync-develop`](#sync-develop) job to back-merge `main` into
    `develop` per Gitflow.
 
-> **Why parse only the subject (not the body)?** An earlier iteration of
-> this workflow read `git log -1 --pretty=%B` (full message including body)
-> and grepped for `BREAKING CHANGE`. The auto-generated PR body from
-> `release-stage.yml` contained that exact string as documentation, so every
-> release-stage promotion was misclassified as a major bump and the
-> resulting version was wrong (e.g. `0.0.9` shipped as `1.0.0`). Using
-> `--pretty=%s` constrains the regex to the subject line so the body can't
-> trigger false matches.
+> **Why no post-merge bump?** A previous iteration ran `npm version <bump>` in
+> `publish-prod` after the merge and pushed the resulting `chore(release):
+> vX.Y.Z [skip ci]` commit and tag back to `main`. Two problems compounded:
+> (1) GitHub appends ` (#PR_NUMBER)` to squash-merge subjects, so the
+> "preferred path" regex `^chore\(release\): X.Y.Z$` never matched and the
+> workflow always fell through to a patch-bump inferred from `package.json`,
+> overriding the operator's intent; (2) the `git push --follow-tags origin
+> main` failed silently against `main`'s branch protection / signed-commit
+> rules, so the bump never landed and the next release tried to publish the
+> same version and got rejected by npm with "You cannot publish over the
+> previously published versions: X.Y.Z". Moving the bump to the release
+> branch (a normal merge, not a bot push to a protected branch) eliminates
+> both failure modes.
 
 #### `sync-develop`
 
@@ -124,7 +122,7 @@ project's `Dockerfile` and pushes it to AWS ECR with two tags per release:
 
 | Tag                                                              | Purpose                                          |
 | ---------------------------------------------------------------- | ------------------------------------------------ |
-| `${URL_DOCKER_REGISTRY}:vX.Y.Z` (the `npm version` output)       | Immutable, traceable to a specific git tag       |
+| `${URL_DOCKER_REGISTRY}:vX.Y.Z` (read from `package.json`)       | Immutable, traceable to a specific git tag       |
 | `${URL_DOCKER_REGISTRY}:latest`                                  | Floating reference to the most recent prod build |
 
 The pipeline uses four cooperating steps after the npm publish:
@@ -190,7 +188,14 @@ The single `cut-release-branch` job:
 3. Verifies `release/<version>` does not already exist on origin (refuses to
    overwrite).
 4. Creates `release/<version>` and pushes it.
-5. Opens a **draft** PR `release/<version>` → `main` with title
+5. **Bumps `package.json` on the release branch to `<version>`** via the
+   GitHub contents API (`PUT /repos/.../contents/package.json`). API commits
+   are verified-signed by `github-actions[bot]`, so this works even if
+   `release/*` has "require signed commits" branch protection. This commit
+   is what pins the version end-to-end: `publish-staging` reads it to mint
+   `X.Y.Z-rc.N` RCs, and after the release PR squash-merges to `main`,
+   `publish-prod` reads it directly without parsing the merge subject.
+6. Opens a **draft** PR `release/<version>` → `main` with title
    `chore(release): <version>` and a pre-merge checklist body.
 
 #### Why draft?
@@ -207,23 +212,18 @@ The PR is opened in **draft** status deliberately:
 
 #### Why `chore(release): <version>` as the default title?
 
-The `publish-prod` job parses the **squash-merge commit message** to choose the
-semver bump (see [`release.yml` — push-to-branch publish](#releaseyml--push-to-branch-publish)).
-A `chore:` prefix maps to a **patch** bump, which is the safest default — it
-will never accidentally promote a release as a `minor` or `major` change.
+The title is purely cosmetic now — the version is pinned in
+`package.json` on the release branch, and `publish-prod` reads it from
+there. You can rename the PR freely without affecting which version
+publishes. `chore(release): <version>` is kept as the default because it
+shows up nicely in the squash-merge commit on `main` and in the
+auto-generated GitHub release notes.
 
-If the release should ship as a `minor` or `major`, the operator edits the
-squash-merge commit title in the GitHub merge dialog **before clicking merge**:
-
-| Desired bump | Squash-merge title prefix                                |
-| ------------ | -------------------------------------------------------- |
-| patch        | `chore(release): 0.1.0` (default — no edit required)     |
-| minor        | `feat: 0.1.0` or `feat(scope): 0.1.0`                    |
-| major        | `feat!: 0.1.0` or include `BREAKING CHANGE` in the body  |
-
-Forcing operators to opt-in to non-patch bumps avoids the failure mode where
-a release branch with a single trivial commit silently promotes to a major
-version because someone authored a `feat!:` commit weeks ago on `develop`.
+To change the version after `release-stage.yml` has run (e.g. you cut
+`release/0.1.0` but decide to ship as `0.2.0`), push a follow-up commit to
+the release branch that edits `package.json` to the new version. Don't try
+to "rename" the release branch — abandon it and dispatch
+`release-stage.yml` again with the correct version.
 
 #### Token usage in this workflow
 
@@ -518,11 +518,16 @@ One-time setup for the workflows to run end-to-end:
      secret** scoped to selected repos so a single token rotation propagates to
      every consumer. Granular tokens are preferred over classic tokens.
    - `RELEASE_TOKEN` — GitHub PAT with `Contents: Read and write`. Used by:
-     - `publish-prod` (in `release.yml`) to push the version commit and tag
-       back through branch protection.
-     - `cut-release-branch` (in `release-stage.yml`) to push `release/*`
+     - `cut-release-branch` (in `release-stage.yml`) to (a) push `release/*`
        branches in a way that triggers `publish-staging` (pushes from
-       `GITHUB_TOKEN` do not trigger downstream workflows).
+       `GITHUB_TOKEN` do not trigger downstream workflows), and (b) commit
+       the `package.json` version bump on the release branch via the
+       contents API.
+     - The previous use — `publish-prod` pushing the version commit + tag
+       back to `main` — is gone. The bump now lives on the release branch
+       and arrives on `main` via the squash-merge, and the release tag is
+       created remotely via `repos.createRelease`, so `publish-prod` runs
+       with only the default `GITHUB_TOKEN`.
 
      **Important: fine-grained PAT resource owner.** When generating a
      fine-grained PAT, the **Resource owner** must be set to `agrippa-io`
@@ -595,9 +600,12 @@ One-time setup for the workflows to run end-to-end:
      only the `latest` tag rotates. This matches the npm dist-tag model
      (`vX.Y.Z` immutable, `latest` floating) and prevents accidental tag
      reuse during retries.
-4. **Branch protection on `main`** must allow the release bot's `[skip ci]`
-   commit (either via a bypass rule for the `RELEASE_TOKEN` identity, or by
-   using a GitHub App token).
+4. **Branch protection on `main`** does not need a bypass for any bot — the
+   release workflow no longer pushes to `main` directly. The version bump
+   arrives via the squash-merge of the release PR, and the `vX.Y.Z` git tag
+   is created remotely via `repos.createRelease`. Branch protection can be
+   as strict as you like (required reviews, required status checks, signed
+   commits, linear history) without conflicting with release automation.
 5. **Default branch**: `develop` should be the working branch; `main` is
    release-only.
 6. **Bootstrap publish (first-time only)**. npm rejects the first publish of a
@@ -624,19 +632,20 @@ integration` at runtime.
 | ----------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------- |
 | `ci.yml` → `publish-canary`               | `contents: read`, `pull-requests: write`   | `issues.createComment` to post the canary install snippet         |
 | `release.yml` → `publish-dev`             | `contents: read`, `pull-requests: read`    | `repos.listPullRequestsAssociatedWithCommit` for PR lookup        |
-| `release.yml` → `publish-prod`            | `contents: write`, `id-token: write`       | `repos.createRelease`; `id-token` reserved for npm OIDC           |
-| `release-stage.yml` → `cut-release-branch`| `contents: read`, `pull-requests: write`   | `gh pr create` opens the draft promotion PR (push uses RELEASE_TOKEN) |
+| `release.yml` → `publish-prod`            | `contents: write`, `id-token: write`       | `repos.createRelease` (which also creates the `vX.Y.Z` tag); `id-token` reserved for npm OIDC |
+| `release-stage.yml` → `cut-release-branch`| `contents: read`, `pull-requests: write`   | `gh pr create` opens the draft promotion PR (push + contents API uses RELEASE_TOKEN) |
 
-Two jobs intentionally use the default `GITHUB_TOKEN` for some operations and
-`RELEASE_TOKEN` for others:
+`cut-release-branch` uses two tokens by design:
 
-- `publish-prod`: `git push` uses `RELEASE_TOKEN` (configured via
-  `actions/checkout`), so the elevated `contents: write` is only consumed by
-  `repos.createRelease`.
-- `cut-release-branch`: the branch push uses `RELEASE_TOKEN` (so the push
-  triggers `publish-staging` downstream); `gh pr create` uses the default
-  `GITHUB_TOKEN`, which is why the job declares `pull-requests: write` rather
-  than relying on the PAT.
+- **`RELEASE_TOKEN`** for (a) pushing the `release/*` branch (so the push
+  triggers `publish-staging` downstream — `GITHUB_TOKEN` pushes don't fire
+  workflows) and (b) the contents-API call that commits the `package.json`
+  bump onto the release branch.
+- **`GITHUB_TOKEN`** for `gh pr create` (via the job's `pull-requests: write`
+  permission), which keeps the surface area of the PAT minimal.
+
+`publish-prod` runs with only the default `GITHUB_TOKEN`. It does not push
+to `main` and does not need a PAT.
 
 ### Package access
 
@@ -659,32 +668,44 @@ project-level `.npmrc` referencing `${NODE_AUTH_TOKEN}`.
    ```
 
    This dispatches the `release-stage.yml` workflow, which:
-   - creates and pushes `release/0.1.0` from `develop`'s tip (triggers
-     `publish-staging` → publishes `0.1.0-rc.<run_number>` under dist-tag
-     `staging`); and
+   - creates and pushes `release/0.1.0` from `develop`'s tip;
+   - commits a `package.json` version bump to `0.1.0` onto the release
+     branch via the GitHub contents API (verified-signed by
+     `github-actions[bot]`). This push then triggers `publish-staging` →
+     publishes `0.1.0-rc.<run_number>` under dist-tag `staging`;
    - opens a **draft** PR `release/0.1.0 → main` titled
      `chore(release): 0.1.0` with a pre-merge checklist body.
 
    Subsequent commits to `release/0.1.0` (stabilization fixes from your local
    machine) each republish a new RC under the same `staging` tag.
 4. After staging soak, mark the draft PR as ready, then merge it. Merging
-   triggers `publish-prod`, which publishes **exactly the version you passed
-   to `yarn release-stage`** (parsed from the squash-merge subject pattern
-   `chore(release): X.Y.Z`). If you need to override that version, edit the
-   PR title before clicking merge.
+   triggers `publish-prod`, which reads the version from `package.json` (now
+   on `main` via the squash-merge) and publishes it under dist-tag
+   `latest`. The PR title is cosmetic — to publish a different version,
+   push a follow-up commit to the release branch that edits `package.json`
+   before merging.
 5. `sync-develop` opens a `sync/main-to-develop-<version>` PR
-   automatically. Review and merge it — that's what closes the Gitflow loop.
-   The merge triggers `publish-dev`, which republishes a fresh `dev`
-   prerelease that includes the version bump.
+   automatically. Review and merge it — that's what closes the Gitflow loop
+   and gets the version bump onto `develop`. The merge triggers
+   `publish-dev`, which republishes a fresh `dev` prerelease at the new
+   version.
 
 ### Hotfix
 
 1. Branch `hotfix/<issue>` from `main`.
-2. PR back into `main`. Merge triggers `publish-prod` exactly as above.
-3. Merge `main` into `develop`.
+2. **Bump `package.json`** to the hotfix version (e.g. `0.1.1`) as part of
+   the hotfix commits. `publish-prod` will publish whatever version
+   `package.json` says — if you forget to bump, the publish step fails with
+   `npm ERR! 403 You cannot publish over the previously published versions:
+   X.Y.Z`, which is the correct guardrail.
+3. PR back into `main`. Merge triggers `publish-prod` exactly as above.
+4. Merge `main` into `develop` (the `sync-develop` job opens this PR for
+   you).
 
-### Forcing a specific bump
+### Choosing the next version
 
-The bump is read from the merge-commit message. To force a `minor` or `major`
-on `main`, ensure the squash-merge commit message uses the conventional-commit
-prefix (`feat:` for minor, `feat!:` / `BREAKING CHANGE:` for major).
+Because `package.json` is the single source of truth, you pick `patch` vs
+`minor` vs `major` by typing the version you want into
+`yarn release-stage <version>` (or, for hotfixes, by editing `package.json`
+in your hotfix branch). There is no longer any auto-inference from
+conventional-commit prefixes.

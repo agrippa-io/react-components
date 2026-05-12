@@ -48,7 +48,42 @@ jobs:
           git checkout -b "$BRANCH"
           git push -u origin "$BRANCH"
           echo "Pushed $BRANCH from develop@$(git rev-parse --short HEAD)"
-          echo "publish-staging will publish ${{ inputs.version }}-rc.<run_number> with dist-tag staging"
+
+      - name: Bump package.json on release branch via contents API
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          # The version is locked in here, on the release branch, so that:
+          #   - publish-staging mints RCs as <inputs.version>-rc.N (it reads
+          #     the base from package.json).
+          #   - publish-prod just reads the version from package.json on main
+          #     after the squash-merge — no post-merge bump, no direct push
+          #     back to main, no fighting with branch protection.
+          #
+          # We use the contents API (not a local `git commit`) so the commit
+          # is verified-signed by github-actions[bot]. That works even if
+          # branch protection on release/* requires signed commits.
+          BRANCH="release/${{ inputs.version }}"
+          VERSION="${{ inputs.version }}"
+
+          SHA=$(gh api "repos/${{ github.repository }}/contents/package.json?ref=${BRANCH}" --jq .sha)
+
+          BUMPED=$(node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = '${VERSION}';
+            process.stdout.write(JSON.stringify(pkg, null, 2) + '\n');
+          ")
+          ENCODED=$(printf '%s' "$BUMPED" | base64)
+
+          gh api -X PUT "repos/${{ github.repository }}/contents/package.json" \
+            -f branch="${BRANCH}" \
+            -f message="chore(release): set version to ${VERSION}" \
+            -f sha="${SHA}" \
+            -f content="${ENCODED}"
+
+          echo "package.json on $BRANCH is now pinned to $VERSION"
+          echo "publish-staging will mint RCs as ${VERSION}-rc.<run_number> under dist-tag staging"
 
       - name: Open release PR to main
         env:
@@ -66,12 +101,16 @@ jobs:
 
           ## Merge behavior
 
-          Merging this PR triggers the \`publish-prod\` job, which publishes
-          version **${{ inputs.version }}** (the version you passed to
-          \`yarn release-stage\`) to npm under dist-tag \`latest\`. To publish
-          a different version, change this PR's title — \`publish-prod\`
-          parses the version from the squash-merge subject pattern
-          \`chore(release): X.Y.Z\`.
+          \`package.json\` on this branch has already been bumped to
+          **${{ inputs.version }}** by \`release-stage.yml\`. When this PR is
+          squash-merged, that bump flows into \`main\` as part of the merge
+          commit and \`publish-prod\` reads the version directly from
+          \`package.json\` — no parsing of the PR title is involved, so you
+          can rename this PR freely.
+
+          To publish a **different** version instead, push a follow-up commit
+          to \`$BRANCH\` that edits \`package.json\` to the desired version
+          before merging.
 
           ## After merge
 
