@@ -30,7 +30,11 @@ const config = {
   // addon-vitest runs every story as a Vitest test (smoke test by default,
   // plus any `play()` interaction blocks). Vitest config + browser setup
   // live in `vitest.config.ts` and `.storybook/vitest.setup.ts`.
-  addons: ['@storybook/addon-links', '@storybook/addon-vitest'],
+  addons: [
+    '@storybook/addon-links',
+    '@storybook/addon-vitest',
+    '@storybook/addon-mcp'
+  ],
 
   // Autodocs is now driven by `tags: ['autodocs']` declared globally in
   // preview.js. The previous `docs.autodocs: true` field is deprecated in
