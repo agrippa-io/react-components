@@ -1,6 +1,6 @@
 {
   "name": "@agrippa-io/react-components",
-  "version": "0.0.8",
+  "version": "0.0.10",
   "type": "module",
   "files": [
     "/dist"
