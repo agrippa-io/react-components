@@ -13,9 +13,9 @@ export interface IGooglePlacesAutocompleteProps<
   DisableClearable extends boolean | undefined = undefined,
   FreeSolo extends boolean | undefined = undefined,
 > extends Omit<
-    AutocompleteProps<T, Multiple, DisableClearable, FreeSolo>,
-    'options' | 'renderInput'
-  > {
+  AutocompleteProps<T, Multiple, DisableClearable, FreeSolo>,
+  'options' | 'renderInput'
+> {
   config: IMapGoogleConfig
   request?: google.maps.places.AutocompletionRequest
   options?: T[]
