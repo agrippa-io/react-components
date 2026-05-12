@@ -228,11 +228,6 @@ jobs:
       - name: Build
         run: yarn build
 
-      - name: 'Publish (dist-tag: latest)'
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --tag latest --access restricted
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -257,6 +252,11 @@ jobs:
             npm_token=${{ secrets.NPM_TOKEN }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: 'Publish (dist-tag: latest)'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --tag latest --access restricted
 
       - name: Push commit + tag
         run: git push --follow-tags origin main
