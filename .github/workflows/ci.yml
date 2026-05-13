@@ -18,17 +18,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - uses: agrippa-io/github-actions/npm/actions/setup-yarn-project@v1
         with:
-          node-version-file: '.nvmrc'
-          cache: 'yarn'
-          registry-url: 'https://registry.npmjs.org'
-          scope: '@agrippa-io'
-
-      - name: Install
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: yarn install --frozen-lockfile
+          npm-scope: '@agrippa-io'
+          npm-token: ${{ secrets.NPM_TOKEN }}
 
       - name: Format check
         run: yarn prettier --check 'src/**/*.{ts,tsx}'
@@ -36,20 +29,7 @@ jobs:
       - name: Lint
         run: yarn eslint . --ext .ts,.tsx --max-warnings=0
 
-      - name: Cache Playwright browsers
-        id: playwright-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
-
-      - name: Install Playwright Chromium
-        run: |
-          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = 'true' ]; then
-            npx playwright install-deps chromium
-          else
-            npx playwright install chromium --with-deps
-          fi
+      - uses: agrippa-io/github-actions/npm/actions/playwright-cached-chromium@v1
 
       - name: Test
         run: yarn vitest run --coverage
@@ -80,26 +60,20 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - uses: actions/setup-node@v4
+      - uses: agrippa-io/github-actions/npm/actions/setup-yarn-project@v1
         with:
-          node-version-file: '.nvmrc'
-          cache: 'yarn'
-          registry-url: 'https://registry.npmjs.org'
-          scope: '@agrippa-io'
+          npm-scope: '@agrippa-io'
+          npm-token: ${{ secrets.NPM_TOKEN }}
 
-      - name: Install
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: yarn install --frozen-lockfile
+      - name: Compute short SHA
+        id: sha
+        run: echo "short=$(git rev-parse --short=7 HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Compute canary version
         id: version
-        run: |
-          BASE=$(node -p "require('./package.json').version")
-          SHORT_SHA=$(git rev-parse --short=7 HEAD)
-          CANARY="${BASE}-canary.${SHORT_SHA}"
-          echo "version=${CANARY}" >> "$GITHUB_OUTPUT"
-          npm version "${CANARY}" --no-git-tag-version --allow-same-version
+        uses: agrippa-io/github-actions/npm/actions/compute-prerelease-version@v1
+        with:
+          suffix: canary.${{ steps.sha.outputs.short }}
 
       - name: Build
         run: yarn build
