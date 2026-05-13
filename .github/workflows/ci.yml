@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: agrippa-io/github-actions/npm/actions/setup-yarn-project@dcd6006e782cde6fa2865fd44850d8afe0d37cfd
+      - uses: agrippa-io/github-actions/npm/actions/setup-yarn-project@main
         with:
           npm-scope: '@agrippa-io'
           npm-token: ${{ secrets.NPM_TOKEN }}
@@ -29,7 +29,7 @@ jobs:
       - name: Lint
         run: yarn eslint . --ext .ts,.tsx --max-warnings=0
 
-      - uses: agrippa-io/github-actions/npm/actions/playwright-cached-chromium@dcd6006e782cde6fa2865fd44850d8afe0d37cfd
+      - uses: agrippa-io/github-actions/npm/actions/playwright-cached-chromium@main
 
       - name: Test
         run: yarn vitest run --coverage
@@ -60,7 +60,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - uses: agrippa-io/github-actions/npm/actions/setup-yarn-project@dcd6006e782cde6fa2865fd44850d8afe0d37cfd
+      - uses: agrippa-io/github-actions/npm/actions/setup-yarn-project@main
         with:
           npm-scope: '@agrippa-io'
           npm-token: ${{ secrets.NPM_TOKEN }}
@@ -71,7 +71,7 @@ jobs:
 
       - name: Compute canary version
         id: version
-        uses: agrippa-io/github-actions/npm/actions/compute-prerelease-version@dcd6006e782cde6fa2865fd44850d8afe0d37cfd
+        uses: agrippa-io/github-actions/npm/actions/compute-prerelease-version@main
         with:
           suffix: canary.${{ steps.sha.outputs.short }}
 
