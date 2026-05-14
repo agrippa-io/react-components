@@ -45,8 +45,9 @@ jobs:
     secrets:
       npm-token: ${{ secrets.NPM_TOKEN }}
 
-  # dev publishes need the PR number + merge SHA in the suffix. Look it up
-  # once, output the composed suffix, feed it to npm-publish-prerelease.
+  # dev publishes need the PR number + merge SHA in the suffix.
+  # compute-dev-suffix does the PR lookup once and exposes the composed
+  # suffix to publish-dev below.
   compute-dev-suffix:
     if: github.ref == 'refs/heads/develop'
     needs: build
@@ -55,20 +56,10 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-      suffix: ${{ steps.compute.outputs.suffix }}
+      suffix: ${{ steps.dev.outputs.suffix }}
     steps:
-      - uses: actions/github-script@v7
-        id: compute
-        with:
-          script: |
-            const { data } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              commit_sha: context.sha,
-            })
-            const pr = data[0]?.number ?? 0
-            const sha = (data[0]?.merge_commit_sha ?? context.sha).slice(0, 7)
-            core.setOutput('suffix', `dev.${pr}.${sha}`)
+      - id: dev
+        uses: agrippa-io/github-actions/npm/actions/compute-dev-suffix@v1
 
   publish-dev:
     if: github.ref == 'refs/heads/develop'
