@@ -14,7 +14,7 @@ jobs:
   # API, draft promotion PR) happens in
   # agrippa-io/github-actions/.github/workflows/npm-release-stage.yml.
   cut-release-branch:
-    uses: agrippa-io/github-actions/.github/workflows/npm-release-stage.yml@feat/npm-release-workflows
+    uses: agrippa-io/github-actions/.github/workflows/npm-release-stage.yml@v1
     with:
       version: ${{ inputs.version }}
     secrets:
