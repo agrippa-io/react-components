@@ -12,44 +12,41 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  validate:
-    name: Format / Lint / Test / Build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+  format:
+    uses: agrippa-io/github-actions/.github/workflows/npm-format.yml@v1
+    with:
+      npm-scope: '@agrippa-io'
+    secrets:
+      npm-token: ${{ secrets.NPM_TOKEN }}
 
-      - uses: agrippa-io/github-actions/npm/actions/setup-yarn-project@v1
-        with:
-          npm-scope: '@agrippa-io'
-          npm-token: ${{ secrets.NPM_TOKEN }}
+  lint:
+    uses: agrippa-io/github-actions/.github/workflows/npm-lint.yml@v1
+    with:
+      npm-scope: '@agrippa-io'
+    secrets:
+      npm-token: ${{ secrets.NPM_TOKEN }}
 
-      - name: Format check
-        run: yarn prettier --check 'src/**/*.{ts,tsx}'
+  test:
+    uses: agrippa-io/github-actions/.github/workflows/npm-test.yml@v1
+    with:
+      npm-scope: '@agrippa-io'
+      with-playwright: true
+    secrets:
+      npm-token: ${{ secrets.NPM_TOKEN }}
 
-      - name: Lint
-        run: yarn eslint . --ext .ts,.tsx --max-warnings=0
-
-      - uses: agrippa-io/github-actions/npm/actions/playwright-cached-chromium@v1
-
-      - name: Test
-        run: yarn vitest run --coverage
-
-      - name: Build
-        run: yarn build
-
-      - name: Build Storybook
-        run: yarn build:storybook
-
-      - name: Upload dist artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-${{ github.event.pull_request.head.sha }}
-          path: dist/
-          retention-days: 7
+  build:
+    needs: [format, lint, test]
+    uses: agrippa-io/github-actions/.github/workflows/npm-build.yml@v1
+    with:
+      npm-scope: '@agrippa-io'
+      with-storybook: true
+      artifact-name: dist-${{ github.event.pull_request.head.sha }}
+    secrets:
+      npm-token: ${{ secrets.NPM_TOKEN }}
 
   publish-canary:
     name: Publish canary to npm
-    needs: validate
+    needs: build
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     permissions:
