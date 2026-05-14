@@ -12,81 +12,53 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  validate:
-    name: Format / Lint / Test / Build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+  # Re-validate on every push to guard against direct pushes, force pushes,
+  # and merge-commit-vs-PR-head divergence. Mirrors ci.yml's fan-out.
+  format:
+    uses: agrippa-io/github-actions/.github/workflows/npm-format.yml@v1
+    with:
+      npm-scope: '@agrippa-io'
+    secrets:
+      npm-token: ${{ secrets.NPM_TOKEN }}
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'yarn'
-          registry-url: 'https://registry.npmjs.org'
-          scope: '@agrippa-io'
+  lint:
+    uses: agrippa-io/github-actions/.github/workflows/npm-lint.yml@v1
+    with:
+      npm-scope: '@agrippa-io'
+    secrets:
+      npm-token: ${{ secrets.NPM_TOKEN }}
 
-      - name: Install
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: yarn install --frozen-lockfile
+  test:
+    uses: agrippa-io/github-actions/.github/workflows/npm-test.yml@v1
+    with:
+      npm-scope: '@agrippa-io'
+      with-playwright: true
+    secrets:
+      npm-token: ${{ secrets.NPM_TOKEN }}
 
-      - name: Format check
-        run: yarn prettier --check 'src/**/*.{ts,tsx}'
+  build:
+    needs: [format, lint, test]
+    uses: agrippa-io/github-actions/.github/workflows/npm-build.yml@v1
+    with:
+      npm-scope: '@agrippa-io'
+      with-storybook: true
+    secrets:
+      npm-token: ${{ secrets.NPM_TOKEN }}
 
-      - name: Lint
-        run: yarn eslint . --ext .ts,.tsx --max-warnings=0
-
-      - name: Cache Playwright browsers
-        id: playwright-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
-
-      - name: Install Playwright Chromium
-        run: |
-          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = 'true' ]; then
-            npx playwright install-deps chromium
-          else
-            npx playwright install chromium --with-deps
-          fi
-
-      - name: Test
-        run: yarn vitest run --coverage
-
-      - name: Build
-        run: yarn build
-
-      - name: Build Storybook
-        run: yarn build:storybook
-
-  publish-dev:
-    name: Publish to npm (dev)
+  # dev publishes need the PR number + merge SHA in the suffix. Look it up
+  # once, output the composed suffix, feed it to npm-publish-prerelease.
+  compute-dev-suffix:
     if: github.ref == 'refs/heads/develop'
-    needs: validate
+    needs: build
     runs-on: ubuntu-latest
-    environment: dev
     permissions:
       contents: read
       pull-requests: read
+    outputs:
+      suffix: ${{ steps.compute.outputs.suffix }}
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'yarn'
-          registry-url: 'https://registry.npmjs.org'
-          scope: '@agrippa-io'
-
-      - name: Install
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: yarn install --frozen-lockfile
-
-      - name: Resolve PR number
-        id: pr
-        uses: actions/github-script@v7
+      - uses: actions/github-script@v7
+        id: compute
         with:
           script: |
             const { data } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
@@ -94,235 +66,58 @@ jobs:
               repo: context.repo.repo,
               commit_sha: context.sha,
             })
-            core.setOutput('number', data[0]?.number ?? 0)
-            core.setOutput('sha', (data[0]?.merge_commit_sha ?? context.sha).slice(0, 7))
+            const pr = data[0]?.number ?? 0
+            const sha = (data[0]?.merge_commit_sha ?? context.sha).slice(0, 7)
+            core.setOutput('suffix', `dev.${pr}.${sha}`)
 
-      - name: Compute prerelease version
-        run: |
-          BASE=$(node -p "require('./package.json').version")
-          npm version "${BASE}-dev.${{ steps.pr.outputs.number }}.${{ steps.pr.outputs.sha }}" --no-git-tag-version --allow-same-version
-
-      - name: Build
-        run: yarn build
-
-      - name: 'Publish (dist-tag: dev)'
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --tag dev --access restricted
+  publish-dev:
+    if: github.ref == 'refs/heads/develop'
+    needs: [build, compute-dev-suffix]
+    uses: agrippa-io/github-actions/.github/workflows/npm-publish-prerelease.yml@v1
+    with:
+      npm-scope: '@agrippa-io'
+      dist-tag: dev
+      version-suffix: ${{ needs.compute-dev-suffix.outputs.suffix }}
+    secrets:
+      npm-token: ${{ secrets.NPM_TOKEN }}
 
   publish-staging:
-    name: Publish to npm (staging)
     if: startsWith(github.ref, 'refs/heads/release/')
-    needs: validate
-    runs-on: ubuntu-latest
-    environment: staging
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'yarn'
-          registry-url: 'https://registry.npmjs.org'
-          scope: '@agrippa-io'
-
-      - name: Install
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: yarn install --frozen-lockfile
-
-      - name: Compute RC version
-        run: |
-          BASE=$(node -p "require('./package.json').version")
-          npm version "${BASE}-rc.${{ github.run_number }}" --no-git-tag-version --allow-same-version
-
-      - name: Build
-        run: yarn build
-
-      - name: 'Publish (dist-tag: staging)'
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --tag staging --access restricted
+    needs: build
+    uses: agrippa-io/github-actions/.github/workflows/npm-publish-prerelease.yml@v1
+    with:
+      npm-scope: '@agrippa-io'
+      dist-tag: staging
+      version-suffix: rc.${{ github.run_number }}
+    secrets:
+      npm-token: ${{ secrets.NPM_TOKEN }}
 
   publish-prod:
-    name: Publish to npm (latest)
     if: github.ref == 'refs/heads/main'
-    needs: validate
-    runs-on: ubuntu-latest
-    environment: prod
-    permissions:
-      contents: write    # Required to create the GitHub release (and the tag it creates)
-      id-token: write    # Required for OIDC/Trusted Publishing to npm
-    steps:
-      - uses: actions/checkout@v4
+    needs: build
+    uses: agrippa-io/github-actions/.github/workflows/npm-publish-latest.yml@v1
+    with:
+      npm-scope: '@agrippa-io'
+    secrets:
+      npm-token: ${{ secrets.NPM_TOKEN }}
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'yarn'
-          registry-url: 'https://registry.npmjs.org'
-          scope: '@agrippa-io'
-
-      - name: Install
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: yarn install --frozen-lockfile
-
-      - name: Resolve published version
-        id: version
-        run: |
-          # The version was committed to package.json on the release branch
-          # by release-stage.yml (or to a hotfix branch by the operator) and
-          # arrived on main via the squash-merge of this PR. publish-prod
-          # just reads it — no bumping, no parsing the merge subject, no
-          # pushing back to main.
-          VERSION=$(node -p "require('./package.json').version")
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
-          echo "Publishing version: ${VERSION}"
-
-      - name: Build
-        run: yarn build
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
-          aws-region: us-west-1
-
-      - name: Log in to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and push Docker image to ECR
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: |
-            ${{ vars.URL_DOCKER_REGISTRY }}:${{ steps.version.outputs.tag }}
-            ${{ vars.URL_DOCKER_REGISTRY }}:latest
-          secrets: |
-            npm_token=${{ secrets.NPM_TOKEN }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: 'Publish (dist-tag: latest)'
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --tag latest --access restricted
-
-      - name: Create GitHub release and tag
-        uses: actions/github-script@v7
-        with:
-          script: |
-            // createRelease creates the tag remotely (no direct git push to
-            // main needed). target_commitish pins the tag at the exact merge
-            // commit that triggered this run rather than the default branch's
-            // current HEAD — important if another commit lands on main while
-            // this job runs.
-            await github.rest.repos.createRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag_name: '${{ steps.version.outputs.tag }}',
-              name: '${{ steps.version.outputs.tag }}',
-              target_commitish: context.sha,
-              generate_release_notes: true,
-            })
-
-  sync-develop:
-    name: Sync main → develop (back-merge per Gitflow)
+  publish-docker:
     if: github.ref == 'refs/heads/main'
     needs: publish-prod
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write       # to push the sync branch
-      pull-requests: write  # to open the back-merge PR
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          # Need full history to compute the diff between main and develop.
-          fetch-depth: 0
-          # RELEASE_TOKEN so the sync branch push triggers downstream CI on
-          # the resulting PR. GITHUB_TOKEN pushes do not fire `pull_request`
-          # events for branches it created.
-          token: ${{ secrets.RELEASE_TOKEN }}
+    uses: agrippa-io/github-actions/.github/workflows/docker-publish-ecr.yml@v1
+    with:
+      registry-url: ${{ vars.URL_DOCKER_REGISTRY }}
+      aws-region: us-west-1
+      tag: ${{ needs.publish-prod.outputs.tag }}
+    secrets:
+      aws-role-arn: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+      buildkit-secret-value: ${{ secrets.NPM_TOKEN }}
 
-      - name: Configure git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-      - name: Check whether main is ahead of develop
-        id: diff
-        run: |
-          git fetch origin develop:develop
-          AHEAD=$(git rev-list --count develop..main)
-          echo "main is $AHEAD commits ahead of develop"
-          echo "ahead=$AHEAD" >> "$GITHUB_OUTPUT"
-
-      - name: Create sync branch
-        if: steps.diff.outputs.ahead != '0'
-        id: sync_branch
-        run: |
-          # Branch name includes the version so retries/failures don't collide
-          # with each other and the audit trail shows which release each sync
-          # corresponds to. We read the version from package.json on main
-          # (which has the version-bump commit publish-prod just pushed)
-          # rather than threading outputs between jobs.
-          VERSION=$(node -p "require('./package.json').version")
-          BRANCH="sync/main-to-develop-${VERSION}"
-          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-          # If a sync branch for this version already exists on origin, abort:
-          # an earlier run already opened the PR. The operator should resolve
-          # that one rather than getting a duplicate.
-          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
-            echo "Branch $BRANCH already exists on origin — a sync PR is in flight."
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          git checkout -b "$BRANCH"
-          git push -u origin "$BRANCH"
-
-      - name: Open back-merge PR
-        if: steps.diff.outputs.ahead != '0' && steps.sync_branch.outputs.skip != 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          BRANCH="${{ steps.sync_branch.outputs.branch }}"
-          VERSION="${{ steps.sync_branch.outputs.version }}"
-          BODY=$(cat <<EOF
-          Automatically opened by \`release.yml\` → \`sync-develop\` after
-          publishing **v${VERSION}** to npm.
-
-          Per Gitflow, every commit on \`main\` must flow back to
-          \`develop\` so:
-
-          - the \`chore(release): vX.Y.Z [skip ci]\` version bump lands on \`develop\`
-          - any stabilization fixes made on the release branch flow downstream
-          - hotfixes (when applicable) reach the integration branch
-
-          ## Merging
-
-          Review the diff, resolve any conflicts on \`$BRANCH\`, then merge.
-          This PR's merge does **not** trigger another publish (no
-          \`release.yml\` job is gated on \`develop\` for prod publishes;
-          \`publish-dev\` will run and emit a fresh \`dev\` prerelease that
-          includes the version bump).
-          EOF
-          )
-
-          gh pr create \
-            --base develop \
-            --head "$BRANCH" \
-            --title "chore(sync): back-merge main → develop (v${VERSION})" \
-            --body "$BODY"
-
-      - name: No-op summary
-        if: steps.diff.outputs.ahead == '0'
-        run: echo "main and develop are in sync (0 commits ahead); nothing to back-merge."
+  sync-develop:
+    if: github.ref == 'refs/heads/main'
+    needs: publish-prod
+    uses: agrippa-io/github-actions/.github/workflows/gitflow-sync-back.yml@v1
+    with:
+      version: ${{ needs.publish-prod.outputs.version }}
+    secrets:
+      release-token: ${{ secrets.RELEASE_TOKEN }}
