@@ -12,64 +12,41 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  validate:
-    name: Format / Lint / Test / Build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+  format:
+    uses: agrippa-io/github-actions/.github/workflows/npm-format.yml@v1
+    with:
+      npm-scope: '@agrippa-io'
+    secrets:
+      npm-token: ${{ secrets.NPM_TOKEN }}
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'yarn'
-          registry-url: 'https://registry.npmjs.org'
-          scope: '@agrippa-io'
+  lint:
+    uses: agrippa-io/github-actions/.github/workflows/npm-lint.yml@v1
+    with:
+      npm-scope: '@agrippa-io'
+    secrets:
+      npm-token: ${{ secrets.NPM_TOKEN }}
 
-      - name: Install
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: yarn install --frozen-lockfile
+  test:
+    uses: agrippa-io/github-actions/.github/workflows/npm-test.yml@v1
+    with:
+      npm-scope: '@agrippa-io'
+      with-playwright: true
+    secrets:
+      npm-token: ${{ secrets.NPM_TOKEN }}
 
-      - name: Format check
-        run: yarn prettier --check 'src/**/*.{ts,tsx}'
-
-      - name: Lint
-        run: yarn eslint . --ext .ts,.tsx --max-warnings=0
-
-      - name: Cache Playwright browsers
-        id: playwright-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
-
-      - name: Install Playwright Chromium
-        run: |
-          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = 'true' ]; then
-            npx playwright install-deps chromium
-          else
-            npx playwright install chromium --with-deps
-          fi
-
-      - name: Test
-        run: yarn vitest run --coverage
-
-      - name: Build
-        run: yarn build
-
-      - name: Build Storybook
-        run: yarn build:storybook
-
-      - name: Upload dist artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-${{ github.event.pull_request.head.sha }}
-          path: dist/
-          retention-days: 7
+  build:
+    needs: [format, lint, test]
+    uses: agrippa-io/github-actions/.github/workflows/npm-build.yml@v1
+    with:
+      npm-scope: '@agrippa-io'
+      with-storybook: true
+      artifact-name: dist-${{ github.event.pull_request.head.sha }}
+    secrets:
+      npm-token: ${{ secrets.NPM_TOKEN }}
 
   publish-canary:
     name: Publish canary to npm
-    needs: validate
+    needs: build
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     permissions:
@@ -80,26 +57,20 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - uses: actions/setup-node@v4
+      - uses: agrippa-io/github-actions/npm/actions/setup-yarn-project@v1
         with:
-          node-version-file: '.nvmrc'
-          cache: 'yarn'
-          registry-url: 'https://registry.npmjs.org'
-          scope: '@agrippa-io'
+          npm-scope: '@agrippa-io'
+          npm-token: ${{ secrets.NPM_TOKEN }}
 
-      - name: Install
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: yarn install --frozen-lockfile
+      - name: Compute short SHA
+        id: sha
+        run: echo "short=$(git rev-parse --short=7 HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Compute canary version
         id: version
-        run: |
-          BASE=$(node -p "require('./package.json').version")
-          SHORT_SHA=$(git rev-parse --short=7 HEAD)
-          CANARY="${BASE}-canary.${SHORT_SHA}"
-          echo "version=${CANARY}" >> "$GITHUB_OUTPUT"
-          npm version "${CANARY}" --no-git-tag-version --allow-same-version
+        uses: agrippa-io/github-actions/npm/actions/compute-prerelease-version@v1
+        with:
+          suffix: canary.${{ steps.sha.outputs.short }}
 
       - name: Build
         run: yarn build
@@ -129,3 +100,18 @@ jobs:
               repo: context.repo.repo,
               body,
             })
+
+  # Aggregate gate — the single stable check the org branch ruleset requires.
+  # Gates on the validation jobs; the canary publish is a side-effect, not a
+  # merge gate.
+  ci-ok:
+    name: ci-ok
+    if: always()
+    needs: [format, lint, test, build]
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          [ "${{ needs.format.result }}" = "success" ] \
+            && [ "${{ needs.lint.result }}" = "success" ] \
+            && [ "${{ needs.test.result }}" = "success" ] \
+            && [ "${{ needs.build.result }}" = "success" ]

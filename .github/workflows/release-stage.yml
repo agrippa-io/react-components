@@ -9,120 +9,13 @@ on:
         type: string
 
 jobs:
+  # Thin wrapper around the shared release-stage workflow. All the heavy
+  # lifting (semver validation, branch cut, package.json bump via contents
+  # API, draft promotion PR) happens in
+  # agrippa-io/github-actions/.github/workflows/npm-release-stage.yml.
   cut-release-branch:
-    name: 'Cut release/${{ inputs.version }} from develop'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
-    steps:
-      - name: Validate version input
-        run: |
-          if ! [[ "${{ inputs.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::version must be semver x.y.z (got: ${{ inputs.version }})"
-            exit 1
-          fi
-
-      - uses: actions/checkout@v4
-        with:
-          ref: develop
-          fetch-depth: 0
-          token: ${{ secrets.RELEASE_TOKEN }}
-
-      - name: Configure git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-      - name: Verify release branch does not already exist
-        run: |
-          BRANCH="release/${{ inputs.version }}"
-          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
-            echo "::error::Branch $BRANCH already exists on origin"
-            exit 1
-          fi
-
-      - name: Create and push release branch
-        run: |
-          BRANCH="release/${{ inputs.version }}"
-          git checkout -b "$BRANCH"
-          git push -u origin "$BRANCH"
-          echo "Pushed $BRANCH from develop@$(git rev-parse --short HEAD)"
-
-      - name: Bump package.json on release branch via contents API
-        env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-        run: |
-          # The version is locked in here, on the release branch, so that:
-          #   - publish-staging mints RCs as <inputs.version>-rc.N (it reads
-          #     the base from package.json).
-          #   - publish-prod just reads the version from package.json on main
-          #     after the squash-merge — no post-merge bump, no direct push
-          #     back to main, no fighting with branch protection.
-          #
-          # We use the contents API (not a local `git commit`) so the commit
-          # is verified-signed by github-actions[bot]. That works even if
-          # branch protection on release/* requires signed commits.
-          BRANCH="release/${{ inputs.version }}"
-          VERSION="${{ inputs.version }}"
-
-          SHA=$(gh api "repos/${{ github.repository }}/contents/package.json?ref=${BRANCH}" --jq .sha)
-
-          BUMPED=$(node -e "
-            const fs = require('fs');
-            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-            pkg.version = '${VERSION}';
-            process.stdout.write(JSON.stringify(pkg, null, 2) + '\n');
-          ")
-          ENCODED=$(printf '%s' "$BUMPED" | base64)
-
-          gh api -X PUT "repos/${{ github.repository }}/contents/package.json" \
-            -f branch="${BRANCH}" \
-            -f message="chore(release): set version to ${VERSION}" \
-            -f sha="${SHA}" \
-            -f content="${ENCODED}"
-
-          echo "package.json on $BRANCH is now pinned to $VERSION"
-          echo "publish-staging will mint RCs as ${VERSION}-rc.<run_number> under dist-tag staging"
-
-      - name: Open release PR to main
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          BRANCH="release/${{ inputs.version }}"
-          BODY=$(cat <<EOF
-          Promotes \`$BRANCH\` to \`main\`.
-
-          ## Pre-merge checklist
-
-          - [ ] \`publish-staging\` has succeeded for this branch
-          - [ ] Staging RC \`${{ inputs.version }}-rc.<run_number>\` validated against \`@agrippa-io/react-components@staging\`
-          - [ ] Any stabilization fixes committed to \`$BRANCH\` (each push republishes the staging RC)
-
-          ## Merge behavior
-
-          \`package.json\` on this branch has already been bumped to
-          **${{ inputs.version }}** by \`release-stage.yml\`. When this PR is
-          squash-merged, that bump flows into \`main\` as part of the merge
-          commit and \`publish-prod\` reads the version directly from
-          \`package.json\` — no parsing of the PR title is involved, so you
-          can rename this PR freely.
-
-          To publish a **different** version instead, push a follow-up commit
-          to \`$BRANCH\` that edits \`package.json\` to the desired version
-          before merging.
-
-          ## After merge
-
-          The \`sync-develop\` job automatically opens a PR to merge \`main\`
-          back into \`develop\` so the version bump and any release fixes
-          flow downstream. Review and merge that PR to close the loop.
-          EOF
-          )
-
-          gh pr create \
-            --base main \
-            --head "$BRANCH" \
-            --title "chore(release): ${{ inputs.version }}" \
-            --body "$BODY" \
-            --draft
+    uses: agrippa-io/github-actions/.github/workflows/npm-release-stage.yml@v1
+    with:
+      version: ${{ inputs.version }}
+    secrets:
+      release-token: ${{ secrets.RELEASE_TOKEN }}
