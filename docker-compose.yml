@@ -1,0 +1,27 @@
+# Builds the static Storybook site and serves it with nginx on port 80.
+#
+#   docker compose up --build      # build + run, http://localhost
+#   docker compose up -d --build   # detached
+#   docker compose down            # stop and remove
+#
+# This builds the Dockerfile's `serve` stage (nginx + storybook-static) — the
+# same image pushed to ECR. For hot-reload local development use the
+# `storybook` service in ../../docker/docker-compose.yml instead.
+services:
+  storybook-static:
+    container_name: storybook-static
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: serve
+      # Uncomment to install private @agrippa-io packages with an npm token:
+      #   NPM_TOKEN=<token> docker compose up --build
+      # secrets:
+      #   - npm_token
+    ports:
+      - "4503:80"
+    restart: unless-stopped
+
+# secrets:
+#   npm_token:
+#     environment: NPM_TOKEN
