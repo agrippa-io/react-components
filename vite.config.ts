@@ -48,7 +48,32 @@ export default defineConfig({
       include: '**/*.svg',
     }),
     react(),
-    dts(),
+    // Generate .d.ts only for the publishable library surface. Without an
+    // explicit config, dts() falls back to the root tsconfig.json (which only
+    // excludes node_modules) and tries to emit declarations for every file
+    // under src — including stories and tests. The story files import
+    // `@storybook/react-vite`, whose package.json `exports` map can't be
+    // resolved under `moduleResolution: "node"`, and the test files reference
+    // vitest globals — both fail the dts pass and break `yarn build`. Point dts
+    // at tsconfig.prod.json (which already excludes these) and exclude them
+    // explicitly so the build never regresses if that tsconfig changes.
+    dts({
+      tsconfigPath: './tsconfig.prod.json',
+      // Root the emitted declarations at `src` so the entry lands at
+      // dist/index.d.ts (matching package.json `types`). Without this, dts
+      // computes the entry root as the common ancestor of all included files —
+      // and because tsconfig.prod.json's `include` spans both `src` and
+      // `@types/svg.d.ts`, that ancestor is the repo root, pushing the entry to
+      // dist/src/index.d.ts where consumers' TypeScript can't find it.
+      entryRoot: 'src',
+      exclude: [
+        '**/*.story.tsx',
+        '**/*.stories.tsx',
+        '**/storybook/**',
+        '**/*.test.ts',
+        '**/*.test.tsx',
+      ],
+    }),
   ], // Uses the 'vite-plugin-dts' plugin for generating TypeScript declaration files (d.ts).
   test: {
     // Two parallel projects share this config:
