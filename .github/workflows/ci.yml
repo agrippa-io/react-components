@@ -100,3 +100,18 @@ jobs:
               repo: context.repo.repo,
               body,
             })
+
+  # Aggregate gate — the single stable check the org branch ruleset requires.
+  # Gates on the validation jobs; the canary publish is a side-effect, not a
+  # merge gate.
+  ci-ok:
+    name: ci-ok
+    if: always()
+    needs: [format, lint, test, build]
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          [ "${{ needs.format.result }}" = "success" ] \
+            && [ "${{ needs.lint.result }}" = "success" ] \
+            && [ "${{ needs.test.result }}" = "success" ] \
+            && [ "${{ needs.build.result }}" = "success" ]
