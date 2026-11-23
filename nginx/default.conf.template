@@ -1,0 +1,26 @@
+# The Storybook server block. ${PORT} is substituted at container start (only
+# PORT: NGINX_ENVSUBST_FILTER), so nginx variables below are left alone.
+server {
+  listen ${PORT};
+  server_name _;
+  root /usr/share/nginx/html;
+  index index.html;
+
+  # Behind an ingress the listen port is not the public one: keep redirects
+  # relative so they never point at :${PORT}.
+  absolute_redirect off;
+
+  # Probes (startup, liveness, readiness). Never touches the site files.
+  location = /healthz {
+    access_log off;
+    default_type text/plain;
+    return 200 "ok\n";
+  }
+
+  # Storybook's static build: plain files, no SPA fallback. index.html and
+  # iframe.html are revalidated on every load so a deploy shows straight away.
+  location / {
+    add_header Cache-Control "no-cache" always;
+    try_files $uri $uri/ =404;
+  }
+}
