@@ -123,7 +123,7 @@ yarn
 # 4. Install Playwright Chromium for story smoke tests (one-time, ~90 MB)
 npx playwright install chromium
 
-# 5. Start Storybook on http://localhost:6006
+# 5. Start Storybook on http://localhost:4503
 yarn start
 ```
 
@@ -177,7 +177,7 @@ and `lint` gates.
 
 | Script                | What it does                                                  |
 | --------------------- | ------------------------------------------------------------- |
-| `yarn start:storybook`| `storybook dev -p 6006` — dev server on port 6006.            |
+| `yarn start:storybook`| `storybook dev -p 4503` — dev server on port 4503.            |
 | `yarn build:storybook`| `storybook build` — produces `storybook-static/`.             |
 
 ### Release
@@ -226,7 +226,12 @@ generated from the two. Validate it with the rest of the workspace from the
 workspace root:
 
 ```bash
-node deploy/registry/bin/agrippa-registry.js manifests services apps
+node deploy/registry/bin/agrippa-registry.js manifests services apps --unique-ports
 ```
+
+Its port, **4503**, is both the container port and the default local port. It is
+unique across the workspace and sits in the range for its kind of service (the
+port table under "Port Assignments" in agrippa-stack `CLAUDE.md`); `--unique-ports`
+fails if another manifest claims it.
 
 Schema and rules: agrippa-stack `deploy/registry/src/manifest/README.md`.

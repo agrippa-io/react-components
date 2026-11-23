@@ -339,7 +339,7 @@ published package. The relevant scripts:
 
 ```bash
 yarn start                # alias for start:storybook
-yarn start:storybook      # storybook dev -p 6006
+yarn start:storybook      # storybook dev -p 4503
 yarn build:storybook      # storybook build (produces storybook-static/)
 ```
 
