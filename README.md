@@ -215,3 +215,18 @@ publish, so you do not need to commit the build output.
 - [Vitest](https://vitest.dev/) — test runner
 - [Vite](https://vitejs.dev/) — library build tool
 # node-service-gateway
+
+## Deployment manifest
+
+[`deploy.yaml`](./deploy.yaml) declares what this app is and needs to run: its
+name, kind, port, public routes, probes, resources, scaling, secret names (never
+values) and dependencies. Where it runs is the environment's business
+(`deploy/environments/<env>.yaml` in agrippa-stack); the registry and charts are
+generated from the two. Validate it with the rest of the workspace from the
+workspace root:
+
+```bash
+node deploy/registry/bin/agrippa-registry.js manifests services apps
+```
+
+Schema and rules: agrippa-stack `deploy/registry/src/manifest/README.md`.

@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=../../deploy/registry/schema/deploy.schema.json
+# Deployment manifest (deployment-e2e-cloud-1 DC-1). Says what this workload is and
+# needs; agrippa-stack deploy/environments/<env>.yaml says where it runs.
+# Schema and rules: agrippa-stack deploy/registry/src/manifest/README.md
+# Storybook for @agrippa-io/react-components, a static site at storybook.<base>.
+version: 1
+name: storybook
+kind: web
+port: 6006
+routes:
+  - host: storybook
+resources:
+  requests: { cpu: 25m, memory: 32Mi }
+  limits: { memory: 64Mi }
