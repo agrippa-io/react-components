@@ -6,7 +6,7 @@
 version: 1
 name: storybook
 kind: web
-port: 6006
+port: 4503
 routes:
   - host: storybook
 resources:

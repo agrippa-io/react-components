@@ -63,7 +63,7 @@
     "lint": "./node_modules/.bin/eslint . --ext .ts,.tsx --fix",
     "prepare": "./node_modules/.bin/husky install",
     "start": "yarn start:storybook",
-    "start:storybook": "./node_modules/.bin/storybook dev -p 6006",
+    "start:storybook": "./node_modules/.bin/storybook dev -p 4503",
     "test": "./node_modules/.bin/vitest run --coverage",
     "test:watch": "./node_modules/.bin/vitest",
     "test:storybook": "./node_modules/.bin/vitest run --project storybook",
