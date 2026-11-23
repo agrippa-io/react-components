@@ -44,10 +44,23 @@ COPY . .
 RUN yarn build:storybook
 
 # ---- serve: nginx serving the static Storybook build ----
-FROM nginx:alpine AS serve
+# Serve: the agrippa-web image contract (agrippa-stack
+# deploy/charts/agrippa-web/README.md): unprivileged nginx (UID 101) on $PORT
+# (4503, the deploy.yaml port), a read-only root filesystem (everything nginx
+# writes goes to /tmp) and /healthz for the probes.
+FROM nginxinc/nginx-unprivileged:1.27-alpine AS serve
 
+ENV PORT=4503 \
+    NGINX_ENVSUBST_OUTPUT_DIR=/tmp \
+    NGINX_ENVSUBST_FILTER=^PORT$
+USER root
+RUN rm -f /etc/nginx/conf.d/default.conf
+COPY nginx/nginx.conf /etc/nginx/nginx.conf
+COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /usr/local/apps/react-components/storybook-static \
      /usr/share/nginx/html
+USER 101
 
-EXPOSE 80
-# nginx:alpine's default CMD serves /usr/share/nginx/html on :80.
+EXPOSE 4503
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget -qO /dev/null "http://127.0.0.1:${PORT}/healthz" || exit 1

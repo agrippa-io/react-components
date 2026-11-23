@@ -1,6 +1,7 @@
-# Builds the static Storybook site and serves it with nginx on port 80.
+# Builds the static Storybook site and serves it with unprivileged nginx on
+# port 4503 (the deploy.yaml port).
 #
-#   docker compose up --build      # build + run, http://localhost
+#   docker compose up --build      # build + run, http://localhost:4503
 #   docker compose up -d --build   # detached
 #   docker compose down            # stop and remove
 #
@@ -19,7 +20,7 @@ services:
       # secrets:
       #   - npm_token
     ports:
-      - "4503:80"
+      - "4503:4503"
     restart: unless-stopped
 
 # secrets:

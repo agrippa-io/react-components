@@ -229,6 +229,11 @@ workspace root:
 node deploy/registry/bin/agrippa-registry.js manifests services apps --unique-ports
 ```
 
+The image's `serve` stage follows the agrippa-web image contract (agrippa-stack
+`deploy/charts/agrippa-web`): unprivileged nginx (UID 101) on `$PORT`, a
+read-only root filesystem (nginx writes only to `/tmp`, see `nginx/`) and
+`GET /healthz` for the probes.
+
 Its port, **4503**, is both the container port and the default local port. It is
 unique across the workspace and sits in the range for its kind of service (the
 port table under "Port Assignments" in agrippa-stack `CLAUDE.md`); `--unique-ports`
