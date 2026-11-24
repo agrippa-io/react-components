@@ -1,0 +1,41 @@
+name: image
+
+# Builds this repo's container image with the shared supply-chain workflow
+# (agrippa-io/github-actions image-build.yml; deployment-e2e-cloud-1 DC-3 3.5):
+#   pull request: build linux/amd64 and Trivy-scan it (nothing is pushed)
+#   push to develop: scan, push ghcr.io/agrippa-io/storybook (amd64 + arm64) by digest,
+#     cosign keyless signature, then dispatch image-built to agrippa-stack,
+#     whose gitops-bump pins the digest in deploy/envs/e2e/images.yaml.
+# The image name is the deploy.yaml workload name (`storybook`), which is what
+# agrippa-deploy composes as <registry>/<workload>@<digest>.
+# Without the GITOPS_TOKEN secret the dispatch is skipped with a notice.
+
+on:
+  push:
+    branches: [develop]
+  pull_request:
+    branches: [develop]
+  workflow_dispatch:
+
+concurrency:
+  group: image-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  image:
+    uses: agrippa-io/github-actions/.github/workflows/image-build.yml@v1
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    with:
+      image-name: storybook
+      workload: storybook
+      push: ${{ github.ref == 'refs/heads/develop' }}
+      buildkit-secret-name: npm_token
+    secrets:
+      buildkit-secret-value: ${{ secrets.NPM_TOKEN }}
+      dispatch-token: ${{ secrets.GITOPS_TOKEN }}

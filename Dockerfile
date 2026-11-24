@@ -54,6 +54,9 @@ ENV PORT=4503 \
     NGINX_ENVSUBST_OUTPUT_DIR=/tmp \
     NGINX_ENVSUBST_FILTER=^PORT$
 USER root
+# Patch the base image's Alpine packages (fixed CVEs the 1.27 tag predates;
+# the image build's Trivy scan fails on fixable CRITICALs).
+RUN apk upgrade --no-cache
 RUN rm -f /etc/nginx/conf.d/default.conf
 COPY nginx/nginx.conf /etc/nginx/nginx.conf
 COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template
