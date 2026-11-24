@@ -12,7 +12,8 @@
 #   docker build --secret id=npm_token,src=<token-file> -t <repo>:latest .
 # The secret is optional — omit it if every dependency is public.
 
-FROM node:24-alpine AS base
+# Static output: build natively, not under QEMU, for every target platform.
+FROM --platform=$BUILDPLATFORM node:24-alpine AS base
 
 # ---- deps: resolve node_modules with the npm token mounted as a secret ----
 FROM base AS deps
