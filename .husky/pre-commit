@@ -1,4 +1,12 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
+# Block commits that add secrets (CI runs the same scan: gitleaks.yml).
+# False positives: .gitleaksignore. Install: brew install gitleaks
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks git --pre-commit --staged --redact --no-banner || exit 1
+else
+  echo "warning: gitleaks not installed; secret scan skipped (CI still runs it)" >&2
+fi
+
 npx lint-staged
