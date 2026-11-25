@@ -1,0 +1,9 @@
+# Keep local secrets, deps and build output out of the image build context.
+.git
+node_modules
+dist
+storybook-static
+coverage
+.env
+.env.*
+!.env.example

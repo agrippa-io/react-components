@@ -38,6 +38,60 @@ git config --global commit.gpgsign true
 The release pipeline (canary on PR, dev on `develop`, staging RC on
 `release/*`, latest on `main`) is documented in [RELEASE.md](./RELEASE.md).
 
+## Google Maps API key
+
+The `MapGoogle`, `GooglePlacesAutocomplete` and `PlaceList` stories call the
+Google Maps JavaScript and Places APIs. The key is **never committed**:
+
+- `config/MapGoogle.config.ts` reads `STORYBOOK_GOOGLE_MAPS_API_KEY` from
+  `import.meta.env`. Storybook's Vite builder exposes `STORYBOOK_*` vars to
+  stories, so this works in `yarn start:storybook`, `yarn build:storybook` and
+  the Vitest story project.
+- The library build (`yarn build`) exposes only `VITE_*` vars, so the published
+  package always exports `MapGoogleConfig.apiKey === ''`. Consumers pass their
+  own key through the components' `config` prop.
+- Without the var the stories still render; Google requests just fail.
+
+| Where | How to set it |
+| ----- | ------------- |
+| Local dev | `cp .env.example .env` and fill in `STORYBOOK_GOOGLE_MAPS_API_KEY` (`.env` is git-ignored and docker-ignored). |
+| Storybook image (`Dockerfile`) | `docker build --secret id=google_maps_api_key,src=<file> …`. Optional. |
+| CI image build (`.github/workflows/image.yml`) | Repo secret `GOOGLE_MAPS_API_KEY`. The shared `image-build.yml` takes one BuildKit secret today (`npm_token`), so wiring a second one is a follow-up. Until then the deployed Storybook has no Maps key. |
+
+A browser key always ends up in the built JS of the static Storybook site, so
+its protection is the **restriction**, not secrecy: limit it to the Maps
+JavaScript API and Places API, and to HTTP referrers `http://localhost:4503/*`
+plus the deployed Storybook origin.
+
+### Rotation checklist
+
+Two keys were committed earlier and **stay readable in git history and in
+published npm versions** (`dist/` bundles from 2023–2024 and every version
+that exported `MapGoogleConfig`). History is not rewritten, so **rotating is
+the real fix**:
+
+| Fingerprint | Where it leaked |
+| ----------- | --------------- |
+| `AIzaSyAc…3K3o` | Story files, `src/features/MapGoogle/config`, committed `dist/` bundles (2022-11 → 2024-01: `d49591d`, `7606c08`, `66555b0`, `c55c896`) |
+| `AIzaSyBT…MFU4` | `config/MapGoogle.config.ts` (`c55c896`, 2024-01 → removed in deployment-e2e-cloud-1 3.8) |
+
+1. Google Cloud console → **APIs & Services → Credentials**, in the project
+   that owns the keys (search for the fingerprints above). Note each key's
+   name and current restrictions.
+2. **Create a new key** (or use *Regenerate key* on the current one), restrict
+   it to *Maps JavaScript API* + *Places API* and to the HTTP referrers above.
+3. Put the new value where it is read: your local `.env`, the
+   `GOOGLE_MAPS_API_KEY` repo secret (for the image build once wired), and the
+   `docker build --secret` file for manual image builds. Never paste it into a
+   tracked file.
+4. **Delete** both old keys (or, if something still needs them for a short
+   overlap, restrict them to no APIs first, then delete). Check the API
+   dashboard shows no traffic on the old keys afterwards.
+5. Run `yarn start:storybook` and open *MapGoogle* and *GooglePlacesAutocomplete*
+   to confirm the new key works.
+
+The gitleaks job in CI (`.github/workflows/ci.yml`) fails a PR that adds a key.
+
 ## Project architecture
 
 All implementation lives under `src/`:

@@ -42,7 +42,15 @@ COPY --from=deps /usr/local/apps/react-components/node_modules ./node_modules
 COPY . .
 
 # `build:storybook` runs `storybook build`, which emits storybook-static/.
-RUN yarn build:storybook
+# The Google Maps browser key is optional and comes in as a BuildKit secret
+# (`--secret id=google_maps_api_key,src=<file>`), exported only for this RUN.
+# It is never in a layer's env or history, but being a browser key it does end
+# up in the static JS: restrict it by HTTP referrer (README "Google Maps API key").
+RUN --mount=type=secret,id=google_maps_api_key \
+    if [ -s /run/secrets/google_maps_api_key ]; then \
+      export STORYBOOK_GOOGLE_MAPS_API_KEY="$(cat /run/secrets/google_maps_api_key)"; \
+    fi && \
+    yarn build:storybook
 
 # ---- serve: nginx serving the static Storybook build ----
 # Serve: the agrippa-web image contract (agrippa-stack
