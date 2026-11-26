@@ -297,6 +297,8 @@ Schema and rules: agrippa-stack `deploy/registry/src/manifest/README.md`.
 
 ## Publishing docs
 
+> **Tutorials** (node-service-docs): [Document an application](https://github.com/agrippa-io/node-service-docs/blob/develop/docs/tutorials/01-document-your-service.md#a-library-or-an-application) · [Using the docs](https://github.com/agrippa-io/node-service-docs/blob/develop/docs/tutorials/05-using-the-docs.md) · [all tutorials](https://github.com/agrippa-io/node-service-docs/blob/develop/docs/tutorials/README.md).
+
 This application's page goes to the docs platform (`node-service-docs`) as the
 `application` source `react-components`: [`docs/app-manifest.json`](docs/app-manifest.json) says what
 the app is for, the routes it serves, the environment it reads and who owns it (format:
