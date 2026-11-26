@@ -295,16 +295,71 @@ fails if another manifest claims it.
 
 Schema and rules: agrippa-stack `deploy/registry/src/manifest/README.md`.
 
-## Published docs
+## Publishing docs
 
-CI publishes this application's page to the docs platform (`node-service-docs`,
-docs-platform-0 14.1) on every merge: [`docs/app-manifest.json`](docs/app-manifest.json)
-says what the app is for, the routes it serves, the environment it reads and
-who owns it (format: node-service-docs `src/lib/appManifest`). The shared
-[`publish-docs` workflow](https://github.com/agrippa-io/github-actions/blob/main/docs/README.md#reusable-workflow-publish-docsyml)
-sends it as an `application` source (job `publish-docs` in
-`.github/workflows/ci.yml`, after `ci-ok`). **Update the manifest with the
-app:** a new route or env var belongs in it too. Pull requests dry-run it;
-merges publish once the docs host is configured (`vars.DOCS_API_URL`,
-`vars.DOCS_TOKEN_URL`, `vars.DOCS_PUBLISH_CLIENT_ID`, the
-`DOCS_PUBLISH_CLIENT_SECRET` secret) and dry-run with a notice until then.
+This application's page goes to the docs platform (`node-service-docs`) as the
+`application` source `react-components`: [`docs/app-manifest.json`](docs/app-manifest.json) says what
+the app is for, the routes it serves, the environment it reads and who owns it (format:
+node-service-docs `src/lib/appManifest`). **Update the manifest with the app:** a new route
+or env var belongs in it too.
+
+The shared [`publish-docs` workflow](https://github.com/agrippa-io/github-actions/blob/main/docs/README.md#reusable-workflow-publish-docsyml) (github-actions `v1.13.0`) does the publishing:
+
+- **Pull requests:** job `publish-docs` in `.github/workflows/ci.yml`, after `ci-ok`,
+  checks the app manifest and dry-runs the publish: the request is validated, nothing is sent.
+- **Pushes to `develop`, `release/**` and `main`:** job `publish-docs` in `.github/workflows/release.yml`, after
+  its `build` job (lint + test), PUTs the version to `<DOCS_API_URL>/sources/react-components/versions/<version>`, where
+  `<version>` is `<version>-dev.<sha>` on `develop`, the `package.json` version on `main` and `release/**`.
+- **Until the four settings below exist** it builds, validates and skips the send with a
+  notice. Today that is every run: the docs host isn't deployed yet. It comes with the
+  cloud launch, docs-platform-0 slice 17.
+
+| Setting | Kind | Value |
+|---|---|---|
+| `DOCS_API_URL` | variable | the docs API base, e.g. `https://api.<env>.agrippa.io/docs/v1` |
+| `DOCS_TOKEN_URL` | variable | the OIDC token endpoint (client credentials) |
+| `DOCS_PUBLISH_CLIENT_ID` | variable | the publishing client's id (scope `docs:publish`) |
+| `DOCS_PUBLISH_CLIENT_SECRET` | secret | that client's secret |
+
+They are GitHub Actions organization variables and an organization secret. Slice 17 creates
+them along with the docs host and its publishing client; there is nothing to set per repo.
+
+### Publish to your local docs stack
+
+A GitHub runner can't reach your `localhost`, so CI never hydrates a local docs stack. Do it
+from the workspace root (`repos-agrippa/`, agrippa-stack `develop`).
+
+1. Start the stack: auth on :4200, authz on :4201, docs on :4370 (`… stack.sh down` stops it).
+
+   ```bash
+   STACK_AUTH_DIR=$PWD/services/node-auth-service STACK_AUTHZ_DIR=$PWD/services/node-service-authz STACK_DOCS_DIR=$PWD/services/node-service-docs github-actions/docs/actions/sdk-contract-stack/stack.sh up
+   ```
+
+2. Publish this repo:
+
+   ```bash
+   npm run docs:publish-local -- --repo apps/react-components
+   ```
+
+3. Publish every wired repo:
+
+   ```bash
+   npm run docs:publish-local
+   ```
+
+4. Validate without sending: it checks the request (there is nothing to build here), needs no token and
+   sends nothing. Leave out `--repo` to check every repo; add `--no-build` to skip the build when the
+   documents are already built (a repo whose document isn't built then fails with `spec not found`).
+
+   ```bash
+   npm run docs:publish-local -- --repo apps/react-components --dry-run
+   npm run docs:publish-local -- --no-build --dry-run
+   ```
+
+5. Look at it. `curl http://localhost:4370/sources/react-components` lists the versions;
+   `…/versions/latest` has the ingest status, counts and diagnostics, and
+   `…/versions/latest/app` the manifest as ingested. In the docs UI: run `VITE_DATA_SOURCE=live npm run start:dev` in
+   `apps/react-docs` and open http://localhost:4504/sources/react-components.
+
+Local versions are `<version>-dev.<sha>` (plus `.local.<hash>` for uncommitted changes), so
+they never collide with CI's. See [`docs-publish-local.mjs`](https://github.com/agrippa-io/agrippa-stack/blob/develop/deploy/scripts/README.md) for the options.

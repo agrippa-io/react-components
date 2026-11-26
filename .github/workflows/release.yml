@@ -112,3 +112,23 @@ jobs:
       version: ${{ needs.publish-prod.outputs.version }}
     secrets:
       release-token: ${{ secrets.RELEASE_TOKEN }}
+
+  # Publish this repo's docs to the docs platform on every push to an
+  # integration branch (docs-platform-0 14.1, D1: CI pushes on every merge).
+  # Runs after the build gate (lint + test); ci.yml does the pull-request dry run.
+  publish-docs:
+    needs: build
+    uses: agrippa-io/github-actions/.github/workflows/publish-docs.yml@v1.13.0
+    with:
+      kind: application
+      install: false
+      format: manifest
+      spec-path: docs/app-manifest.json
+      name: Component library (Storybook)
+      # Publishes once vars.DOCS_API_URL, vars.DOCS_TOKEN_URL,
+      # vars.DOCS_PUBLISH_CLIENT_ID and the DOCS_PUBLISH_CLIENT_SECRET secret
+      # exist; until then it builds, validates and skips with a notice.
+      dry-run: auto
+    secrets:
+      npm-token: ${{ secrets.NPM_TOKEN }}
+      docs-client-secret: ${{ secrets.DOCS_PUBLISH_CLIENT_SECRET }}
