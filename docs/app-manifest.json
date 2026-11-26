@@ -1,0 +1,26 @@
+{
+  "manifest": "1",
+  "purpose": "The @agrippa-io/react-components library (Material UI extended in atomic design), served as a Storybook for browsing and testing every component.",
+  "port": 4503,
+  "routes": [
+    {
+      "path": "/",
+      "title": "Storybook",
+      "description": "Every component's stories, docs and controls.",
+      "auth": "public"
+    }
+  ],
+  "env": [
+    {
+      "name": "STORYBOOK_GOOGLE_MAPS_API_KEY",
+      "description": "Google Maps API key for the map components' stories.",
+      "secret": true
+    }
+  ],
+  "owners": [
+    {
+      "name": "Agrippa platform",
+      "role": "team"
+    }
+  ]
+}
