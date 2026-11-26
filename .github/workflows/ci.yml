@@ -119,3 +119,21 @@ jobs:
             && [ "${{ needs.test.result }}" = "success" ] \
             && [ "${{ needs.build.result }}" = "success" ] \
             && [ "${{ needs.gitleaks.result }}" = "success" ]
+
+  # Publish the app manifest to the docs platform (docs-platform-0 14.1, D1: CI
+  # pushes on every merge). Runs after the ci-ok gate; not part of it.
+  publish-docs:
+    needs: ci-ok
+    uses: agrippa-io/github-actions/.github/workflows/publish-docs.yml@v1.13.0
+    with:
+      kind: application
+      install: false
+      format: manifest
+      spec-path: docs/app-manifest.json
+      name: Component library (Storybook)
+      # Dry run on pull requests; on merges it publishes once vars.DOCS_API_URL
+      # and the docs credentials exist (until then it dry-runs with a notice).
+      dry-run: ${{ github.event_name == 'pull_request' && 'true' || 'auto' }}
+    secrets:
+      npm-token: ${{ secrets.NPM_TOKEN }}
+      docs-client-secret: ${{ secrets.DOCS_PUBLISH_CLIENT_SECRET }}

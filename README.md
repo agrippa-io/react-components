@@ -294,3 +294,17 @@ port table under "Port Assignments" in agrippa-stack `CLAUDE.md`); `--unique-por
 fails if another manifest claims it.
 
 Schema and rules: agrippa-stack `deploy/registry/src/manifest/README.md`.
+
+## Published docs
+
+CI publishes this application's page to the docs platform (`node-service-docs`,
+docs-platform-0 14.1) on every merge: [`docs/app-manifest.json`](docs/app-manifest.json)
+says what the app is for, the routes it serves, the environment it reads and
+who owns it (format: node-service-docs `src/lib/appManifest`). The shared
+[`publish-docs` workflow](https://github.com/agrippa-io/github-actions/blob/main/docs/README.md#reusable-workflow-publish-docsyml)
+sends it as an `application` source (job `publish-docs` in
+`.github/workflows/ci.yml`, after `ci-ok`). **Update the manifest with the
+app:** a new route or env var belongs in it too. Pull requests dry-run it;
+merges publish once the docs host is configured (`vars.DOCS_API_URL`,
+`vars.DOCS_TOKEN_URL`, `vars.DOCS_PUBLISH_CLIENT_ID`, the
+`DOCS_PUBLISH_CLIENT_SECRET` secret) and dry-run with a notice until then.
