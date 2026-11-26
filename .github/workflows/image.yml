@@ -8,7 +8,7 @@ name: image
 #     whose gitops-bump pins the digest in deploy/envs/e2e/images.yaml.
 # The image name is the deploy.yaml workload name (`storybook`), which is what
 # agrippa-deploy composes as <registry>/<workload>@<digest>.
-# Without the GITOPS_TOKEN secret the dispatch is skipped with a notice.
+# The dispatch uses GITOPS_TOKEN, or the org RELEASE_TOKEN until that exists.
 
 on:
   push:
@@ -38,4 +38,6 @@ jobs:
       buildkit-secret-name: npm_token
     secrets:
       buildkit-secret-value: ${{ secrets.NPM_TOKEN }}
-      dispatch-token: ${{ secrets.GITOPS_TOKEN }}
+      # RELEASE_TOKEN stands in until a scoped GITOPS_TOKEN exists (agrippa-stack
+      # DEPLOYMENT.md §2, THREAT-MODEL R-15; deployment-e2e-cloud-1 4.1.5).
+      dispatch-token: ${{ secrets.GITOPS_TOKEN || secrets.RELEASE_TOKEN }}
